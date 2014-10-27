@@ -21,6 +21,7 @@
     "postuninstall": "node uninstall.js"
   },
   "dependencies": {
+    "archiver": "^0.12.0",
     "async": "0.9.0",
     "codemirror": "^4.6.0",
     "fs-extra": "0.9.1",
@@ -28,6 +29,9 @@
     "periodicjs.core.controller": "~1.90.11",
     "periodicjs.core.extensions": "~1.90.16",
     "periodicjs.core.utilities": "~1.90.10"
+  },
+  "peerDependencies": {
+    "periodicjs.ext.dbseed": "~2.0.0"
   },
   "devDependencies": {
     "browserify": "~4.2.1",

@@ -5,7 +5,7 @@ var path = require('path'),
 	// util = require('util'),
 	async = require('async'),
 	backupController,
-	// Collection,
+	archiver = require('archiver'),
 	mongoose,
 	logger,
 	// datafile,
@@ -60,6 +60,34 @@ var extscript = function (resources) {
 				}
 			},function(err,results){
 				console.log('err',err,'results',results);
+				//https://github.com/ctalkington/node-archiver/blob/master/examples/pack-zip.js
+				//
+				//
+				var output = fs.createWriteStream(path.join(process.cwd(),'content/files/backup/',defaultExportFileName+'.zip'));
+				var archive = archiver('zip');
+
+				output.on('close', function() {
+				  console.log(archive.pointer() + ' total bytes');
+				  console.log('archiver has been finalized and the output file descriptor has closed.');
+				});
+
+				archive.on('error', function(err) {
+				  throw err;
+				});
+
+				archive.pipe(output);
+
+				// var file1 = __dirname + '/fixtures/file1.txt';
+				// var file2 = __dirname + '/fixtures/file2.txt';
+
+				// archive
+				//   .append(fs.createReadStream(file1), { name: 'file1.txt' })
+				//   .append(fs.createReadStream(file2), { name: 'file2.txt' })
+				//   .finalize();
+				archive.bulk([
+				  { src: [path.join(process.cwd(),'content/files/backup/.tempbackup/',defaultExportFileName)+'/**/*.*'], 
+				  dest: path.resolve(process.cwd(),'content/files/backup/.tempbackup/',defaultExportFileName) }
+				]).finalize();
 				process.exit(0);
 			});
 		}
