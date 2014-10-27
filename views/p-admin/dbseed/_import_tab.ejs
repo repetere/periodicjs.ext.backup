@@ -1,0 +1,81 @@
+<article class="_pea-form">
+	<div class="_pea-document">
+		<div class="_pea-row">
+			
+			<div class="_pea-row" id="importSeedSelection">
+				<div>
+					<p>First upload or select a previously uploaded seed or database backup.</p>
+				</div>
+				<div class="_pea-col-span5">
+					<h3>Upload a seed file</h3>
+					<div class="_pea-row _pea-container-forminput _pea-text-center _pea-form" style="margin-bottom:2em;">
+						<input type="hidden" name="_csrf" value=<%= locals.token %> >
+						<input type="file" name="upload-seed_button" id="upload-seed_button" value="Upload" class="_pea-button _pea-col-span12 _pea-color-default"/>
+					</div>					
+				</div>
+				<div class="_pea-col-span1 _pea-text-center">
+					<h3 style="margin-top:1.5em">OR</h3>
+				</div>
+				<div class="_pea-col-span6 _pea-pull-right">
+					<h3>Use an existing Seed File</h3>
+					<div class="_pea-row _pea-container-forminput _pea-form">
+						<select id="existingseedlist" name="existingseedlist">
+							<% if(existingseeds && existingseeds.length<1){%>
+							<option>No seeds files</option>
+							<%}
+							else{%>
+								<option>Select an existing seed</option>
+							<%
+								existingseeds.forEach(function(seedfile){
+									%>
+									<option value="<%- seedfile%>"><%- seedfile%></option>
+									<%
+								});
+								} %>
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="_pea-row" id="importFormContainer" style="display:none;">
+				<div class="_pea-col-span12">
+					<form class="_pea-form _pea-ajax-form noFormSubmit" method="post" action="/p-admin/dbseed/uploadseed" data-successfunction="displayImportSeedStatus" data-beforesubmitfunction="showImportStatusResult">
+						<h3>Selected Import Seed</h3>
+						<div class="_pea-row _pea-container-forminput">
+							<div class="_pea-col-span8">
+								<p>Select if you want to replace data (by checking wipe and replace) or import new data.</p>
+							</div>
+						</div>
+						<input type="hidden" name="_csrf" value=<%= locals.token %> >
+						<input type="hidden" name="previousseed" id="previousseed" >
+
+						<div class="_pea-row _pea-container-forminput">
+							<div class="_pea-col-span2">
+								<small>Name:</small>
+							</div>
+							<input type="text" id="seedpathdisplay" class="_pea-col-span10" name="seedpathdisplay" value=""  disabled="disabled"  >
+							<input type="hidden" id="seedpath" class="_pea-col-span10" name="seedpath" value=""   >
+							<input type="hidden" id="assetid" class="_pea-col-span10" name="assetid" value="" >
+						</div>
+						<div class="_pea-row _pea-container-forminput">
+							<div class="_pea-col-span2">
+								<label class="_pea-text-small _pea-color-error" for="wipecheckbox">Wipe & replace:</label>
+							</div>
+							<input type="checkbox" id="wipecheckbox" name="wipecheckbox" value="wipe"> <span class="_pea-color-error _pea-text-small">WARNING:</span><span class="_pea-text-small"> This will replace all data in the database, a databse back up seed will be created in content/files/dbseeds</span>
+						</div>
+						<div class="_pea-row _pea-container-forminput _pea-text-center">
+							<input type="submit" name="save_button" style="font-size: 125%;" value="Import Seed" class="_pea-button _pea-color-success"/>
+						</div>
+					</form>
+				</div>
+			</div>
+			<div class="_pea-row">
+				<div id="importstatuscontainer" class="_pea-col-span12 " style="display:none;">
+					<h3>Import status</h3>
+					<textarea id="seedimportstatus" class="textarea-tall noFormSubmit _pea-col-span12">
+						Importing Data
+					</textarea>
+				</div>
+			</div>
+		</div>
+	</div>
+</article>

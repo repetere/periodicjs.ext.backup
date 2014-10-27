@@ -1,0 +1,347 @@
+<% exampleseed={};
+
+	exampleseed.userprivilege={
+	  "datatype": "userprivilege",
+	  "datadocument": {
+      "title": "can add users",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+      "userprivilegeid": 001,
+	    "author": "exampleusername1",
+	    "description": "optional example description/content"
+	  }
+	};
+	exampleseed.userrole={
+	  "datatype": "userrole",
+	  "datadocument": {
+      "title": "periodic editor",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+      "userroleid": 001,
+      "privileges":[
+          110,120,130,140,150,160,
+          310,320,330,350,360,
+          710,715,720,730,740,
+          910
+      ],
+	    "author": "exampleusername1",
+	    "description": "optional example description/content"
+	  }
+	};
+	exampleseed.usergroup={
+	  "datatype": "usergroup",
+	  "datadocument": {
+      "title": "periodic editors",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+      "usergroupid": 001,
+      "roles":[
+          110,120,130,140,150,160,
+          310,320,330,350,360,
+          710,715,720,730,740,
+          910
+      ],
+	    "author": "exampleusername1",
+	    "description": "optional example description/content"
+	  }
+	};
+	exampleseed.setting={
+	  "datatype": "setting",
+	  "datadocument": {
+      "title": "example setting",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+      "value": "any kind of value"
+	  }
+	};
+	exampleseed.asset={
+	  "datatype": "asset",
+	  "datadocument": {
+	    "name": "assetname",
+      "title": "optional title is generated from name",
+	    "attributes": {
+          "periodicFilename": "filename.ext",
+          "periodicPath": "/public/uploads/files/filename.ext",
+          "periodicDirectory": "/public/uploads/files/"
+      },
+      "locationtype": "local|amazon|rackspace",
+      "fileurl": "/uploads/files/filename.ext",
+      "assettype": "image/png",
+      "status": "VALID",
+	    "contenttypes": ['examplecontenttype1','examplecontenttype2'],
+	    "contenttypeattributes": {
+	      "examplecontenttype1": {
+	        "exampleattributename": "exampleattributevalue"
+	      },
+	      "examplecontenttype2": {
+	        "exampleattributename": "exampleattributevalue"
+	      }
+	    }
+	  }
+	};
+
+	exampleseed.tag={
+	  "datatype": "tag",
+	  "datadocument": {
+	    "title": "example tag",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	    "author": "exampleusername",
+	    "dek": "optional example tagline",
+	    "content": "optional example description/content",
+	    "contenttypes": ['examplecontenttype1','examplecontenttype2'],
+	    "parent": ['parent-tag1','parent-tag2'],
+	    "contenttypeattributes": {
+	      "examplecontenttype1": {
+	        "exampleattributename": "exampleattributevalue"
+	      },
+	      "examplecontenttype2": {
+	        "exampleattributename": "exampleattributevalue"
+	      }
+	    }
+	  }
+	};
+	exampleseed.category={
+	  "datatype": "category",
+	  "datadocument": {
+	    "title": "example category",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	    "author": "exampleusername",
+	    "dek": "optional example categoryline",
+	    "content": "optional example description/content",
+	    "contenttypes": ['examplecontenttype1','examplecontenttype2'],
+	    "parent": ['parent-category1','parent-category2'],
+	    "contenttypeattributes": {
+	      "examplecontenttype1": {
+	        "exampleattributename": "exampleattributevalue"
+	      },
+	      "examplecontenttype2": {
+	        "exampleattributename": "exampleattributevalue"
+	      }
+	    }
+	  }
+	};
+	exampleseed.contenttype={
+	  "datatype": "contenttype",
+	  "datadocument": {
+	    "title": "example contenttype",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	    "attributes": {
+	      "title": "examplecontenttypeattributename",
+  	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	      "datatype": "string|array|date|number",
+	      "defaultvalue": "optional default value"
+	    }
+	  }
+	};
+	exampleseed.user={
+	  "datatype": "user",
+	  "datadocument": {
+	    "email": "exampleuser1@example.com",
+      "username": "exampleusername",
+      "password": "this is stored salted and hashed with bcrypt, and is non reversible",
+      "activated": false,
+      "accounttype": "invalid|basic|admin",
+      "userasset":"assetname",
+      "firstname":"firstname",
+      "lastname":"lastname",
+      "gender":"optional gender - female|male",
+	    "primaryasset": "exampleassetname1",
+	    "assets": [
+	      "exampleassetname1",
+	      "exampleassetname2"
+	    ],
+	    "coverimage": "exampleassetname1",
+	    "coverimages": [
+	      "exampleassetname1",
+	      "exampleassetname2"
+	    ],
+      "userroles":[200,300]
+	  }
+	};
+	exampleseed.item={
+	  "datatype": "item",
+	  "datadocument": {
+	    "title": "example item",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	    "content": "example item content.",
+	    "dek": "optional example tagline",
+	    "status": "draft|schedule|publish",   
+	    "itemauthorname": "exampleusername1",
+	    "primaryauthor": "exampleusername1",
+	    "authors": [
+	    	"exampleusername2",
+				"exampleusername3"
+    	],
+	    "tags": [
+	      "example-tagname1",
+	      "example-tagname2"
+	    ],
+	    "categories": [
+	      "example-categoryname1",
+	      "example-categoryname2"
+	    ],
+	    "contenttypes": [
+	      "example-contenttypename1",
+	      "example-contenttypename2"
+	    ],
+	    "primaryasset": "exampleassetname1",
+	    "assets": [
+	      "exampleassetname1",
+	      "exampleassetname2"
+	    ],
+	    "contenttypeattributes": {
+	      "examplecontenttype1": {
+	        "exampleattributename": "exampleattributevalue"
+	      },
+	      "examplecontenttype2": {
+	        "exampleattributename": "exampleattributevalue"
+	      }
+	    }
+	  }
+  };
+	exampleseed.collection={
+	  "datatype": "collection",
+	  "datadocument": {
+	    "title": "example collection",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	    "dek": "optional example tagline",
+	    "content": "example collection content.",
+	    "status": "draft|schedule|publish",   
+	    "itemauthorname": "exampleusername1",
+	    "primaryauthor": "exampleusername1",
+			"items": [
+				{
+					"order": 1,
+					"additionalattributes": "optional collection item attributes",
+					"item": "example-itemname1"
+				},{
+					"order": 2,
+					"additionalattributes": "optional collection item attributes",
+					"item": "example-itemname2"
+				},{
+					"order": 3,
+					"additionalattributes": "optional collection item attributes",
+					"item": "example-itemname3"
+				}
+			],
+	    "authors": [
+	    	"exampleusername2",
+				"exampleusername3"
+    	],
+	    "tags": [
+	      "example-tagname1",
+	      "example-tagname2"
+	    ],
+	    "categories": [
+	      "example-categoryname1",
+	      "example-categoryname2"
+	    ],
+	    "contenttypes": [
+	      "example-contenttypename1",
+	      "example-contenttypename2"
+	    ],
+	    "primaryasset": "exampleassetname1",
+	    "assets": [
+	      "exampleassetname1",
+	      "exampleassetname2"
+	    ],
+	    "contenttypeattributes": {
+	      "examplecontenttype1": {
+	        "exampleattributename": "exampleattributevalue"
+	      },
+	      "examplecontenttype2": {
+	        "exampleattributename": "exampleattributevalue"
+	      }
+	    }
+	  }
+	};
+	exampleseed.library={
+	  "datatype": "library",
+	  "datadocument": {
+	    "title": "example library",
+	    "name":"optional name, if left blank will be generated from title using periodicjs.core.utilities.makeNiceName(title) which replaces non alpha numeric characters with dashes(-)",
+	    "dek": "optional example tagline",
+	    "content": "example library content.",
+	    "status": "draft|schedule|publish",   
+	    "itemauthorname": "exampleusername1",
+	    "primaryauthor": "exampleusername1",
+			"items": [
+				{
+					"entitytype": "item",
+					"order": 1,
+					"additionalattributes": "optional library item attributes",
+					"entity_item": "example-itemname1"
+				},{
+					"entitytype": "collection",
+					"order": 2,
+					"additionalattributes": "optional library collection attributes",
+					"entity_collection": "example-collectionname1"
+				},
+				{
+					"entitytype": "item",
+					"order": 3,
+					"additionalattributes": "optional library item attributes",
+					"entity_item": "example-itemname2"
+				},{
+					"entitytype": "collection",
+					"order": 4,
+					"additionalattributes": "optional library collection attributes",
+					"entity_collection": "example-collectionname2"
+				}
+			],
+	    "authors": [
+	    	"exampleusername2",
+				"exampleusername3"
+    	],
+	    "tags": [
+	      "example-tagname1",
+	      "example-tagname2"
+	    ],
+	    "categories": [
+	      "example-categoryname1",
+	      "example-categoryname2"
+	    ],
+	    "contenttypes": [
+	      "example-contenttypename1",
+	      "example-contenttypename2"
+	    ],
+	    "primaryasset": "exampleassetname1",
+	    "assets": [
+	      "exampleassetname1",
+	      "exampleassetname2"
+	    ],
+	    "contenttypeattributes": {
+	      "examplecontenttype1": {
+	        "exampleattributename": "exampleattributevalue"
+	      },
+	      "examplecontenttype2": {
+	        "exampleattributename": "exampleattributevalue"
+	      }
+	    }
+	  }
+	};
+	 
+	%>
+	<script type="text/javascript">
+		<%- locals.viewhelper.passObjToClient(exampleseed,"exampleseed") %>
+	</script>
+<form class="_pea-form _pea-ajax-form" method="post" action="/p-admin/mailer/testmail">
+	<div class="_pea-document">
+		<div class="_pea-row">
+		<h3>About DB Seeds & Migrations</h3>
+			<p>Database seeds are an efficient way of populating your database using periodic's database models.</p>
+			<p>The seed format is a JSON document, that is inserted into the database and will automatically connect references to other content documents, tag, and taxonimies if they're referenced by name.</p>
+		</div>
+		<div class="_pea-row">
+			<h3>Example <select id="example-seed-select">
+				<option value="item">item</option>
+				<option value="collection">collection</option>
+				<option value="library">library</option>
+				<option value="tag">tag</option>
+				<option value="category">category</option>
+				<option value="contenttype">contenttype</option>
+				<option value="userprivilve">category</option>
+				<option value="userrole">userrole</option>
+				<option value="setting" selected="selected">dbsetting</option>
+				<option value="user">user</option>
+			</select> seed</h3>
+			<textarea id="example-seed-ta" class="_pea-col-span12 codemirroreditor jsonEditor"><%- JSON.stringify(exampleseed.setting,null,1) %></textarea>
+		</div>
+	</div>
+</form>

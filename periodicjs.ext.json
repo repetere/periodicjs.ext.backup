@@ -1,0 +1,11 @@
+{
+	"periodicCompatibility":"1.90.20",
+	"periodicDependencies": [],
+	"periodicjs.ext.admin": {
+		"menu": {
+			"Extensions": {
+				"seed admin": "<a href=\"/p-admin/dbseed\">DB Export/Import/Backup</a>"
+			}
+		}
+	}
+}
