@@ -1,6 +1,6 @@
 /*
  * domhelper
- * http://github.com/typesettin/periodicjs.ext.dbseed
+ * http://github.com/typesettin/periodicjs.ext.backup
  *
  * Copyright (c) 2014 Yaw Joseph Etse. All rights reserved.
  */
@@ -96,7 +96,7 @@ module.exports = function (grunt) {
 				cwd: 'public',
 				expand: true,
 				src: '**/*.*',
-				dest: '../../public/extensions/periodicjs.ext.dbseed',
+				dest: '../../public/extensions/periodicjs.ext.backup',
 			},
 		},
 		watch: {

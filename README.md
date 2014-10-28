@@ -1,43 +1,30 @@
-# periodicjs.ext.dbseed
+# periodicjs.ext.backup
 
-An extension to import/export json seeds into periodic mongodb, the seed format is a mirror of the model definition except objectID reference are placed with the document name, and dbseed looks up those name references and inserts the correct object id.
+Backup your current instance of periodic to a zip archieve containing your configurations, content, themes, and database.
 
- [API Documentation](https://github.com/typesettin/periodicjs.ext.dbseed/blob/master/doc/api.md)
+ [API Documentation](https://github.com/typesettin/periodicjs.ext.backup/blob/master/doc/api.md)
 
 ## Installation
 
 ```
-$ npm install periodicjs.ext.dbseed
+$ npm install periodicjs.ext.backup
 ```
 
 ## Usage
 
-### import database (upsert/update) with custom file seed from cli
+### import database (upsert/update) with custom file backup from cli
 
 ```
-$ node index.js --cli --extension dbseed --task import --file /path/to/file.json
+$ node index.js --cli --extension backup --task backup [--filename optionalbackupzipname --outputpath optionaloutputdirectory]
 ```
 
-### export database to seed file seed from cli
+### export database to backup file backup from cli
 
 ```
-$ node index.js --cli --extension dbseed --task export --file /path/to/file.json
+$ node index.js --cli --extension backup --task export --file /path/to/file.json
 ```
 
-If no file path is specified, the default file path is `content/files/backups/seeds/dbseed-[year]-[month]-[day]-[timestamp].json`
-
-### import sample from cli
-
-```
-$ node index.js --cli --extension dbseed --task sampledata
-```
-
-### empty the database (WARNING THIS AWALYS EXPORTS A BACK UP) sample from cli
-
-```
-$ node index.js --cli --extension dbseed --task empty --confirm
-```
-TThe file path is `content/files/backups/dbemptybackup-[year]-[month]-[day]-[timestamp].json`
+If no file path is specified, the default file path is `content/files/backups/backups/backup-[year]-[month]-[day]-[timestamp].json`
 
 ##Development
 *Make sure you have grunt installed*
@@ -56,3 +43,4 @@ $ jsdoc2md controller/**/*.js index.js install.js uninstall.js > doc/api.md
 ```
 ##Notes
 * Check out https://github.com/typesettin/periodicjs for the full Periodic Documentation
+* example backup: clear && node index.js --cli --extension backup --task backup --filename mybackup --outputpath ~/Downloads/myperiodicbackup
