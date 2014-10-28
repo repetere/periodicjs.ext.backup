@@ -50,7 +50,22 @@ var extscript = function (resources) {
 				});
 		}
 		else if (argv.task === 'restore') {
-			console.log('Restore');
+			console.time('Restoring periodic');
+			backupController.restoreBackup({
+					file: argv.file,
+					removebackup: argv.removebackup
+				},
+				function (err, result) {
+					console.timeEnd('Restoring periodic');
+					if (err) {
+						logger.error(err.stack.toString());
+						logger.error(err.toString());
+					}
+					else {
+						logger.info('restore backup result', result);
+					}
+					process.exit(0);
+				});
 		}
 		else {
 			logger.silly('invalid backup task', argv);

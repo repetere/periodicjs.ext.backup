@@ -58,6 +58,7 @@ var createBackupStatusfile = function (asyncCallBack) {
 				backupdatabase: backupdatabase,
 				backupconfigcontent: backupconfigcontent,
 				backupthemes: backupthemes,
+				backuppublicdir: backuppublicdir,
 			};
 			backupstatus.packageJSON = packageJSON;
 			fs.outputJson(backupstatusfile, backupstatus, function (err) {

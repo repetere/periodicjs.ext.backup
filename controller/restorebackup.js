@@ -1,13 +1,144 @@
 'use strict';
 
 var async = require('async'),
+	path = require('path'),
+	fs = require('fs-extra'),
 	Utilities = require('periodicjs.core.utilities'),
 	ControllerHelper = require('periodicjs.core.controller'),
+	Decompress = require('decompress'),
+	defaultRestoreDir = path.resolve(process.cwd(), 'content/files/backups/.restoretemp'),
+	backuparchievefile,
+	backupfoldername,
+	removeBackupArchieve = false,
+	backupFileStatus = {},
+	backupSeedFileJSON = {},
+	seedController,
 	CoreUtilities,
 	CoreController,
 	appSettings,
 	mongoose,
-	logger;
+	logger,
+	d = new Date(),
+	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
+
+var restoreDBSeed = function (asyncCallBack) {
+	async.series([
+		function (exportdbcallback) {
+			seedController.exportSeed({
+				filepath: 'content/files/dbseeds/' + defaultExportFileName,
+			}, exportdbcallback);
+		},
+		function (wipedbcallback) {
+			seedController.emptyDB({}, wipedbcallback);
+		},
+		function (getseedfilecallback) {
+			fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backupseed.json'),
+				function (err, backupSeedFileStatusJSON) {
+					if (err) {
+						getseedfilecallback(err);
+					}
+					else {
+						backupSeedFileJSON = backupSeedFileStatusJSON;
+						getseedfilecallback(null, 'got backup json status');
+					}
+				});
+		},
+		function (importrestorecallback) {
+			seedController.importSeed({
+				jsondata: backupSeedFileJSON,
+				encryptpassword: false,
+				insertsetting: 'upsert'
+			}, importrestorecallback);
+		}
+	], asyncCallBack);
+};
+
+/**
+ * copy the backup files
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var copybackupFiles = function (asyncCallBack) {
+	var contentDir = path.resolve(process.cwd(), 'content/'),
+		publicDir = path.resolve(process.cwd(), 'public/'),
+		backupContentDir = path.resolve(defaultRestoreDir, backupfoldername, 'content'),
+		backupPublicDir = path.resolve(defaultRestoreDir, backupfoldername, 'public');
+	async.parallel({
+		copyconfigcontent: function (cb) {
+			if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
+				fs.copy(backupContentDir, contentDir, cb);
+			}
+			else {
+				cb(null, 'do not copy content dir');
+			}
+		},
+		copypublicfiles: function (cb) {
+			if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backuppublicdir) {
+				fs.copy(backupPublicDir, publicDir, cb);
+			}
+			else {
+				cb(null, 'do not copy public dir');
+			}
+		}
+	}, asyncCallBack);
+};
+
+/**
+ * get back up status, to figure out what to restore
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var getBackupStatus = function (asyncCallBack) {
+	backupfoldername = path.basename(backuparchievefile, '.zip');
+	fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backup.json'),
+		function (err, backupFileStatusJSON) {
+			if (err) {
+				asyncCallBack(err);
+			}
+			else {
+				backupFileStatus = backupFileStatusJSON;
+				// console.log(backupFileStatus);
+				asyncCallBack(null, 'got backup json status');
+			}
+		});
+};
+
+/**
+ * remove backup zip
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var removeBackupArchieveZip = function (asyncCallBack) {
+	if ((removeBackupArchieve && typeof removeBackupArchieve === 'string' && removeBackupArchieve === 'true') || removeBackupArchieve === true) {
+		fs.remove(backuparchievefile, asyncCallBack);
+	}
+	else {
+		asyncCallBack(null, 'do not remove backup archieve');
+	}
+};
+
+/**
+ * unzips backup zip archieve
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var upzipArchieve = function (asyncCallBack) {
+	fs.ensureDirSync(defaultRestoreDir);
+	var decompress = new Decompress()
+		.src(backuparchievefile)
+		.dest(defaultRestoreDir)
+		.use(Decompress.zip());
+
+	decompress.run(function (err, files) {
+		if (err) {
+			asyncCallBack(err);
+		}
+		else {
+			asyncCallBack(null, 'unzipped: ' + backuparchievefile);
+		}
+	});
+	// backuparchievefile
+};
 
 /**
  * imports backup data into the database
@@ -16,34 +147,32 @@ var async = require('async'),
  * @return {Function} async callback restoreBackupCallback(err,results);
  */
 var restoreBackup = function (options, restoreBackupCallback) {
-	insertsetting = options.insertsetting;
-
-	resetSeedData();
-	var backupjsondata = options.jsondata,
-		statusResults = {},
-		backupDataValidationError = isValidSeedJSONSync({
-			jsondata: backupjsondata
-		}),
-		startSeed = function (startSeedCallback) {
-			var dataForSetSeedObjectArrays = {
-				documents: backupjsondata.data
-			};
-			startSeedCallback(null, dataForSetSeedObjectArrays);
-		};
-
-	if (backupDataValidationError) {
-		restoreBackupCallback(backupDataValidationError, null);
+	try {
+		backuparchievefile = path.resolve(options.file);
+		removeBackupArchieve = (typeof options.removebackup === 'string') ? options.removebackup : removeBackupArchieve;
+		async.series({
+			upzipArchieve: upzipArchieve,
+			removeBackupArchieveZip: removeBackupArchieveZip,
+			getBackupStatus: getBackupStatus,
+			copybackupFiles: copybackupFiles,
+			restoreDBSeed: restoreDBSeed,
+			// installMissingNodeModules,
+			// removeBackupdirectory,
+			// retstartApplication
+		}, function (err, restoringStatus) {
+			restoreBackupCallback(
+				err, {
+					upzipArchieve: restoringStatus.upzipArchieve,
+					removeBackupArchieveZip: restoringStatus.removeBackupArchieveZip,
+					copybackupFiles: restoringStatus.copybackupFiles,
+					restoreDBSeed: 'restored db',
+					// restoringStatus: installMissingNodeModules,
+					// restoringStatus: removeBackupdirectory
+				});
+		});
 	}
-	else {
-		statusResults.numberofdocuments = backupjsondata.data.length;
-		async.waterfall([
-				startSeed,
-				setSeedObjectArrays,
-				insertDataIntoDatabase
-			],
-			function (err, restorebackupresult) {
-				restoreBackupCallback(null, restorebackupresult);
-			});
+	catch (e) {
+		restoreBackupCallback(e);
 	}
 };
 
@@ -66,6 +195,7 @@ var restoreBackupModule = function (resources) {
 	appSettings = resources.settings;
 	CoreController = new ControllerHelper(resources);
 	CoreUtilities = new Utilities(resources);
+	seedController = require('../../periodicjs.ext.dbseed/controller/dbseed')(resources);
 
 	return {
 		restoreBackup: restoreBackup,
