@@ -1,7 +1,7 @@
 {
-  "name": "periodicjs.ext.dbseed",
+  "name": "periodicjs.ext.backup",
   "description": "An extension for seeding db with data",
-  "version": "2.0.0",
+  "version": "1.90.900",
   "main": "index.js",
   "engines": {
     "node": ">=0.10.x"
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/typesettin/periodicjs.ext.dbseed.git"
+    "url": "git://github.com/typesettin/periodicjs.ext.backup.git"
   },
   "scripts": {
     "test": "mocha -R spec --recursive",
