@@ -7,6 +7,7 @@ var async = require('async'),
 	ControllerHelper = require('periodicjs.core.controller'),
 	Decompress = require('decompress'),
 	defaultRestoreDir = path.resolve(process.cwd(), 'content/files/backups/.restoretemp'),
+	npmhelper = require(path.resolve(process.cwd(), 'scripts/npmhelper'))({}),
 	backuparchievefile,
 	backupfoldername,
 	removeBackupArchieve = false,
@@ -21,6 +22,27 @@ var async = require('async'),
 	d = new Date(),
 	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
 
+/**
+ * installing the missing extensions
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var installMissingNodeModules = function (asyncCallBack) {
+	async.waterfall([
+		npmhelper.getInstalledExtensions,
+		npmhelper.getMissingExtensionsFromConfig,
+		npmhelper.installMissingExtensions,
+		npmhelper.installMissingNodeModules,
+		npmhelper.getThemeName,
+		npmhelper.installThemeModules
+	], asyncCallBack);
+};
+
+/**
+ * restore the db by wiping and then importing seed
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
 var restoreDBSeed = function (asyncCallBack) {
 	async.series([
 		function (exportdbcallback) {
@@ -156,7 +178,7 @@ var restoreBackup = function (options, restoreBackupCallback) {
 			getBackupStatus: getBackupStatus,
 			copybackupFiles: copybackupFiles,
 			restoreDBSeed: restoreDBSeed,
-			// installMissingNodeModules,
+			installMissingNodeModules: installMissingNodeModules,
 			// removeBackupdirectory,
 			// retstartApplication
 		}, function (err, restoringStatus) {
@@ -166,7 +188,7 @@ var restoreBackup = function (options, restoreBackupCallback) {
 					removeBackupArchieveZip: restoringStatus.removeBackupArchieveZip,
 					copybackupFiles: restoringStatus.copybackupFiles,
 					restoreDBSeed: 'restored db',
-					// restoringStatus: installMissingNodeModules,
+					installMissingNodeModules: restoringStatus.installMissingNodeModules,
 					// restoringStatus: removeBackupdirectory
 				});
 		});
