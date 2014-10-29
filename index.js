@@ -16,9 +16,8 @@ module.exports = function (periodic) {
 
 	for (var x in periodic.settings.extconf.extensions) {
 		if (periodic.settings.extconf.extensions[x].name === 'periodicjs.ext.admin') {
-			backupRouter.post('/uploadbackup', backupController.import_upload);
-			backupRouter.post('/downloadbackup', backupController.export_download);
-			backupRouter.post('/custombackup', backupController.import_custombackup);
+			backupRouter.post('/restorebackup', backupController.restore_backup);
+			backupRouter.post('/downloadbackup', backupController.download_backup);
 			backupRouter.get('/', backupController.index);
 		}
 	}

@@ -40,11 +40,11 @@ var download_backup = function (req, res) {
 			});
 		}
 		else {
-			var downloadfile = result.exportbackup.exportBackupFilePath,
+			var downloadfile = path.join(process.cwd(), 'content/files/backups', result.exportbackup.defaultBackupZipFilename),
 				exportFileName = path.basename(downloadfile);
 
 			res.setHeader('Content-disposition', 'attachment; filename=' + exportFileName);
-			res.setHeader('Content-type', 'application/json');
+			res.setHeader('Content-type', 'application/octet-stream');
 			// res.setHeader('Content-length', downloadfileObj.length);
 
 			// var filestream = fs.createReadStream(downloadfile);
@@ -72,7 +72,7 @@ var download_backup = function (req, res) {
  * @param  {object} res
  * @return {object} responds with backup page
  */
-var import_upload = function (req, res) {
+var restore_backup = function (req, res) {
 	var uploadBackupObject = CoreUtilities.removeEmptyObjectValues(req.body),
 		originalbackupuploadpath,
 		backupname,
@@ -226,9 +226,15 @@ var index = function (req, res) {
 		},
 		function (templatepath, cb) {
 			fs.readdir(path.join(process.cwd(), 'content/files/backups'), function (err, files) {
+				var backupzipfiles = [];
+				for (var bufi = 0; bufi < files.length; bufi++) {
+					if (files[bufi].match(/.zip/gi)) {
+						backupzipfiles.push(files[bufi]);
+					}
+				}
 				cb(err, {
 					templatepath: templatepath,
-					existingbackups: files
+					existingbackups: backupzipfiles
 				});
 			});
 		}
@@ -279,7 +285,7 @@ var controller = function (resources) {
 
 	return {
 		index: index,
-		import_upload: import_upload,
+		restore_backup: restore_backup,
 		download_backup: download_backup,
 		restoreBackup: restoreBackupModule.restoreBackup,
 		exportBackup: exportBackupModule.exportBackup,
