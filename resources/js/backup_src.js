@@ -13,25 +13,8 @@ var componentTab1,
 	backupcustomstatusoutputel,
 	importBackupSelectionEl,
 	importFormContainer,
-	codeMirrorJSEditorsElements,
 	exampleBackupSelect,
-	codeMirrors = [],
-	CodeMirror = require('codemirror'),
 	ComponentTabs = require('periodicjs.component.tabs');
-
-
-require('../../node_modules/codemirror/addon/edit/matchbrackets');
-require('../../node_modules/codemirror/addon/comment/comment');
-require('../../node_modules/codemirror/addon/comment/continuecomment');
-require('../../node_modules/codemirror/addon/fold/foldcode');
-require('../../node_modules/codemirror/addon/fold/comment-fold');
-require('../../node_modules/codemirror/addon/fold/indent-fold');
-require('../../node_modules/codemirror/addon/fold/brace-fold');
-require('../../node_modules/codemirror/addon/fold/foldgutter');
-require('../../node_modules/codemirror/mode/css/css');
-require('../../node_modules/codemirror/mode/htmlembedded/htmlembedded');
-require('../../node_modules/codemirror/mode/javascript/javascript');
-
 
 var useExistingBackupListener = function (e) {
 	backuppathInput.value = e.target.value;
@@ -41,54 +24,13 @@ var useExistingBackupListener = function (e) {
 	importFormContainer.style.display = 'block';
 };
 
-/**
- * resize codemirror on window resize
- */
-var styleWindowResizeEventHandler = function () {
-	if (codeMirrorJSEditorsElements) {
-		for (var y in codeMirrors) {
-			codeMirrors[y].refresh();
-			// codeMirrorJSEditors[y].setSize('auto', '80%');
-		}
-	}
-};
-
-var initCodemirrors = function () {
-	for (var cm = 0; cm < codeMirrorJSEditorsElements.length; cm++) {
-		console.log('codeMirrorJSEditorsElements[cm].id', codeMirrorJSEditorsElements[cm].id);
-		codeMirrors[codeMirrorJSEditorsElements[cm].id] = CodeMirror.fromTextArea(
-			codeMirrorJSEditorsElements[cm], {
-				lineNumbers: true,
-				lineWrapping: true,
-				matchBrackets: true,
-				autoCloseBrackets: true,
-				mode: 'application/json',
-				indentUnit: 4,
-				indentWithTabs: true,
-				'overflow-y': 'hidden',
-				'overflow-x': 'auto',
-				lint: true,
-				gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
-				foldGutter: true
-			}
-		);
-	}
-	window.codeMirrors = codeMirrors;
-};
 
 var tabEvents = function () {
 	componentTab1.on('tabsShowIndex', function ( /*index*/ ) {
 		// codemirrortab(index);
-		styleWindowResizeEventHandler();
 	});
 };
 
-var exapmleBackupSelectEventHandler = function (e) {
-	var newCMValue = JSON.stringify(window.examplebackup[e.target.value], null, 2);
-	codeMirrors['example-backup-ta'].doc.setValue(newCMValue);
-};
-
-window.addEventListener('resize', styleWindowResizeEventHandler, false);
 
 window.showImportStatusResult = function () {
 	document.getElementById('importstatuscontainer').style.display = 'block';
@@ -100,15 +42,16 @@ window.displayImportBackupStatus = function (ajaxFormResponse) {
 	importstatusoutputel.innerHTML = JSON.stringify(ajaxFormResponse, null, 2);
 };
 
-window.showCustomStatusResult = function () {
-	document.getElementById('custombackup-codemirror').innerHTML = codeMirrors['custombackup-codemirror'].getValue();
-	document.getElementById('customstatuscontainer').style.display = 'block';
-	backupcustomstatusoutputel.innerHTML = 'Customing backup data';
-};
 
 window.displayCustomBackupStatus = function (ajaxFormResponse) {
 	// console.log(ajaxFormResponse);
 	backupcustomstatusoutputel.innerHTML = JSON.stringify(ajaxFormResponse, null, 2);
+};
+
+window.handleAjaxError = function (errormessage) {
+	if (errormessage === 'Origin is not allowed by Access-Control-Allow-Origin') {
+		window.location.reload();
+	}
 };
 
 window.addEventListener('load', function () {
@@ -123,7 +66,6 @@ window.addEventListener('load', function () {
 	importstatusoutputel = document.getElementById('backupimportstatus');
 	importBackupSelectionEl = document.getElementById('importBackupSelection');
 	backupcustomstatusoutputel = document.getElementById('backupcustomstatus');
-	codeMirrorJSEditorsElements = document.querySelectorAll('.codemirroreditor');
 	window.ajaxFormEventListers('._pea-ajax-form');
 	// exampleBackupSelect.addEventListener('change', exapmleBackupSelectEventHandler, false);
 	if (tabelement) {
@@ -144,6 +86,5 @@ window.addEventListener('load', function () {
 	if (existingbackuplist) {
 		existingbackuplist.addEventListener('change', useExistingBackupListener, false);
 	}
-	initCodemirrors();
 	tabEvents();
 });

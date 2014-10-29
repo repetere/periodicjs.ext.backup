@@ -39,7 +39,7 @@
 			</div>
 			<div class="_pea-row" id="importFormContainer" style="display:none;">
 				<div class="_pea-col-span12">
-					<form class="_pea-form _pea-ajax-form noFormSubmit" method="post" action="/p-admin/backup/restorebackup" data-successfunction="displayImportBackupStatus" data-beforesubmitfunction="showImportStatusResult">
+					<form class="_pea-form _pea-ajax-form noFormSubmit" method="post" action="/p-admin/backup/restorebackup" data-successfunction="displayImportBackupStatus" data-beforesubmitfunction="showImportStatusResult" data-errorfunction="handleAjaxError">
 						<h3>Selected Import Backup</h3>
 						<div class="_pea-row _pea-container-forminput">
 							<div class="_pea-col-span11">
