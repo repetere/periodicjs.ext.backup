@@ -14,7 +14,7 @@ var Utilities = require('periodicjs.core.utilities'),
 	appSettings,
 	mongoose,
 	logger,
-	// uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups'),
+	uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups'),
 	d = new Date(),
 	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
 
@@ -76,12 +76,14 @@ var restore_backup = function (req, res) {
 	var uploadBackupObject = CoreUtilities.removeEmptyObjectValues(req.body),
 		originalbackupuploadpath,
 		backupname,
+		fixedbackuppath,
 		useExistingBackup = (uploadBackupObject.previousbackup && uploadBackupObject.previousbackup === 'usepreviousbackup') ? true : false,
 		newbackuppath;
 
 	async.series({
 			setupbackupdata: function (cb) {
 				try {
+
 					if (useExistingBackup) {
 						backupname = path.basename(uploadBackupObject.backuppath);
 						newbackuppath = path.resolve(process.cwd(), 'content/files/backups', backupname);
@@ -90,6 +92,12 @@ var restore_backup = function (req, res) {
 						originalbackupuploadpath = path.join(process.cwd(), 'public', uploadBackupObject.backuppath);
 						backupname = path.basename(uploadBackupObject.backuppath);
 						newbackuppath = path.resolve(process.cwd(), 'content/files/backups', backupname);
+
+						var backupnamearray = backupname.split('-'),
+							fixedbackupname;
+						backupnamearray.shift();
+						fixedbackupname = backupnamearray.join('-');
+						fixedbackuppath = path.resolve(process.cwd(), 'content/files/backups', fixedbackupname);
 					}
 					cb(null, 'setup backup data');
 				}
@@ -110,7 +118,7 @@ var restore_backup = function (req, res) {
 					cb(null, 'skip move directory, useExistingBackup');
 				}
 				else {
-					fs.rename(originalbackupuploadpath, newbackuppath, cb);
+					fs.rename(originalbackupuploadpath, fixedbackuppath, cb);
 				}
 			},
 			deleteOldUpload: function (cb) {
@@ -122,7 +130,7 @@ var restore_backup = function (req, res) {
 				}
 			},
 			removeAssetFromDB: function (cb) {
-				if (uploadBackupObject.assetid) {
+				if (uploadBackupObject.assetid && useExistingBackup) {
 					CoreController.deleteModel({
 						model: Asset,
 						deleteid: uploadBackupObject.assetid,
@@ -135,50 +143,19 @@ var restore_backup = function (req, res) {
 					cb(null, 'existing backup');
 				}
 			},
-			wipedb: function (cb) {
-				if (uploadBackupObject.wipecheckbox) {
-					async.series([
-						function (wipedbcallback) {
-							console.time('Exporting Backup Data');
-							exportBackupModule.exportBackup({
-								filepath: 'content/files/backups/' + defaultExportFileName,
-							}, function (err, status) {
-								console.timeEnd('Exporting Backup Data');
-								wipedbcallback(err, status);
-							});
-						},
-						function (emptydbcallback) {
-							console.time('Empty Database Data');
-							dbopsModule.emptyDB({},
-								function (err, status) {
-									console.timeEnd('Empty Database Data');
-									emptydbcallback(err, status);
-								});
-						}
-					], function (err, status) {
-						cb(err, status);
-					});
+			restorebackup: function (cb) {
+				if (useExistingBackup) {
+					restoreBackupModule.restoreBackup({
+						file: newbackuppath,
+						removebackup: false
+					}, cb);
 				}
 				else {
-					cb(null, 'do not empty db');
+					restoreBackupModule.restoreBackup({
+						file: fixedbackuppath,
+						removebackup: false
+					}, cb);
 				}
-			},
-			backupdb: function (cb) {
-				fs.readJson(newbackuppath, function (err, backupjson) {
-					if (err) {
-						cb(err);
-					}
-					else {
-						console.time('Importing Backup Data');
-						restoreBackupModule.restoreBackup({
-							jsondata: backupjson,
-							insertsetting: 'upsert'
-						}, function (err, status) {
-							console.timeEnd('Importing Backup Data');
-							cb(err, status);
-						});
-					}
-				});
 			}
 		},
 		function (err, status) {
@@ -196,7 +173,7 @@ var restore_backup = function (req, res) {
 					renderView: 'home/index',
 					responseData: {
 						pagedata: {
-							title: 'New Item',
+							title: 'Restore back up',
 						},
 						data: status,
 						user: req.user

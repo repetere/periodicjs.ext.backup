@@ -39,11 +39,11 @@
 			</div>
 			<div class="_pea-row" id="importFormContainer" style="display:none;">
 				<div class="_pea-col-span12">
-					<form class="_pea-form _pea-ajax-form noFormSubmit" method="post" action="/p-admin/dbbackup/uploadbackup" data-successfunction="displayImportBackupStatus" data-beforesubmitfunction="showImportStatusResult">
+					<form class="_pea-form _pea-ajax-form noFormSubmit" method="post" action="/p-admin/backup/restorebackup" data-successfunction="displayImportBackupStatus" data-beforesubmitfunction="showImportStatusResult">
 						<h3>Selected Import Backup</h3>
 						<div class="_pea-row _pea-container-forminput">
-							<div class="_pea-col-span8">
-								<p>Select if you want to replace data (by checking wipe and replace) or import new data.</p>
+							<div class="_pea-col-span11">
+								<p>This restores your content, themes, extensions, and database from a backup zip archieve.</p>
 							</div>
 						</div>
 						<input type="hidden" name="_csrf" value=<%= locals.token %> >
@@ -58,13 +58,12 @@
 							<input type="hidden" id="assetid" class="_pea-col-span10" name="assetid" value="" >
 						</div>
 						<div class="_pea-row _pea-container-forminput">
-							<div class="_pea-col-span2">
-								<label class="_pea-text-small _pea-color-error" for="wipecheckbox">Wipe & replace:</label>
+							<div class="_pea-col-span12">
+								<span class="_pea-color-error _pea-text-small">WARNING:</span><span class="_pea-text-small"> This will replace all data in the database, a databse back up backup will be created in content/files/backups</span>
 							</div>
-							<input type="checkbox" id="wipecheckbox" name="wipecheckbox" value="wipe"> <span class="_pea-color-error _pea-text-small">WARNING:</span><span class="_pea-text-small"> This will replace all data in the database, a databse back up backup will be created in content/files/backups</span>
 						</div>
 						<div class="_pea-row _pea-container-forminput _pea-text-center">
-							<input type="submit" name="save_button" style="font-size: 125%;" value="Import Backup" class="_pea-button _pea-color-success"/>
+							<input type="submit" name="save_button" style="font-size: 125%;" value="Restore Backup" class="_pea-button _pea-color-success"/>
 						</div>
 					</form>
 				</div>
