@@ -22,6 +22,22 @@ var async = require('async'),
 	d = new Date(),
 	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
 
+var retstartApplication = function (asyncCallBack) {
+	CoreUtilities.run_cmd('pm2', ['restart', 'periodicjs'], function (text) {
+		console.log(text);
+		asyncCallBack(null, 'restarted app with pm2');
+	});
+};
+
+/**
+ * remove the restore folder
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var removeBackupdirectory = function (asyncCallBack) {
+	fs.remove(path.resolve(defaultRestoreDir, backupfoldername), asyncCallBack);
+};
+
 /**
  * installing the missing extensions
  * @param  {Function} asyncCallBack
@@ -179,8 +195,8 @@ var restoreBackup = function (options, restoreBackupCallback) {
 			copybackupFiles: copybackupFiles,
 			restoreDBSeed: restoreDBSeed,
 			installMissingNodeModules: installMissingNodeModules,
-			// removeBackupdirectory,
-			// retstartApplication
+			removeBackupdirectory: removeBackupdirectory,
+			retstartApplication: retstartApplication
 		}, function (err, restoringStatus) {
 			restoreBackupCallback(
 				err, {
@@ -189,7 +205,8 @@ var restoreBackup = function (options, restoreBackupCallback) {
 					copybackupFiles: restoringStatus.copybackupFiles,
 					restoreDBSeed: 'restored db',
 					installMissingNodeModules: restoringStatus.installMissingNodeModules,
-					// restoringStatus: removeBackupdirectory
+					removeBackupdirectory: restoringStatus.removeBackupdirectory,
+					retstartApplication: restoringStatus.retstartApplication
 				});
 		});
 	}
