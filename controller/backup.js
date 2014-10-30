@@ -191,6 +191,11 @@ var restore_backup = function (req, res) {
  */
 var index = function (req, res) {
 	async.waterfall([
+		function (cb) { 
+			fs.ensureDir(path.join(process.cwd(), 'content/files/backups'),function(err){
+				cb(err);
+			});
+		},
 		function (cb) {
 			CoreController.getPluginViewDefaultTemplate({
 					viewname: 'p-admin/backup/index',
@@ -204,10 +209,12 @@ var index = function (req, res) {
 		function (templatepath, cb) {
 			fs.readdir(path.join(process.cwd(), 'content/files/backups'), function (err, files) {
 				var backupzipfiles = [];
-				for (var bufi = 0; bufi < files.length; bufi++) {
-					if (files[bufi].match(/.zip/gi)) {
-						backupzipfiles.push(files[bufi]);
-					}
+				if(files && files.length >0){
+					for (var bufi = 0; bufi < files.length; bufi++) {
+						if (files[bufi].match(/.zip/gi)) {
+							backupzipfiles.push(files[bufi]);
+						}
+					}	
 				}
 				cb(err, {
 					templatepath: templatepath,
