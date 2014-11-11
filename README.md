@@ -12,19 +12,19 @@ $ npm install periodicjs.ext.backup
 
 ## Usage
 
-### import database (upsert/update) with custom file backup from cli
+### export periodic backup (content, themes, config, files & database) to a zip file from the cli
 
 ```
 $ node index.js --cli --extension backup --task backup [--filename optionalbackupzipname --outputpath optionaloutputdirectory]
 ```
 
-### export database to backup file backup from cli
+### restore periodic from a backup zip file backup from the cli
 
 ```
-$ node index.js --cli --extension backup --task export --file /path/to/file.json
+$ node index.js --cli --extension backup --task restore --file /path/to/backupzipfile.zip
 ```
 
-If no file path is specified, the default file path is `content/files/backups/backups/backup-[year]-[month]-[day]-[timestamp].json`
+If no file path is specified, the default file path is `content/files/backups/backups/dbemptybackup-[year]-[month]-[day]-[timestamp].zip`
 
 ##Development
 *Make sure you have grunt installed*
