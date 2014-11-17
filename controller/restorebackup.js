@@ -192,8 +192,8 @@ var restoreBackup = function (options, restoreBackupCallback) {
 			upzipArchieve: upzipArchieve,
 			removeBackupArchieveZip: removeBackupArchieveZip,
 			getBackupStatus: getBackupStatus,
-			copybackupFiles: copybackupFiles,
 			restoreDBSeed: restoreDBSeed,
+			copybackupFiles: copybackupFiles,
 			installMissingNodeModules: installMissingNodeModules,
 			removeBackupdirectory: removeBackupdirectory,
 			retstartApplication: retstartApplication
