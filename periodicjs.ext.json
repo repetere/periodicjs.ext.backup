@@ -1,13 +1,13 @@
 {
-	"periodicCompatibility":"2.1.8",
+	"periodicCompatibility":"3.0.0",
 	"periodicDependencies": [{
     	"extname":"periodicjs.ext.dbseed",
-    	"version":"2.0.0"
+    	"version":"3.0.0"
 	}],
 	"periodicjs.ext.admin": {
 		"menu": {
 			"Extensions": {
-				"backup restore admin": "<a href=\"/p-admin/backup\">Periodic Backup/Restore</a>"
+				"backup restore admin": "<a href=\"/p-admin/backup\">Periodic Backup & Restore</a>"
 			}
 		}
 	}
