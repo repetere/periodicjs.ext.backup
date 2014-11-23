@@ -191,8 +191,8 @@ var restore_backup = function (req, res) {
  */
 var index = function (req, res) {
 	async.waterfall([
-		function (cb) { 
-			fs.ensureDir(path.join(process.cwd(), 'content/files/backups'),function(err){
+		function (cb) {
+			fs.ensureDir(path.join(process.cwd(), 'content/files/backups'), function (err) {
 				cb(err);
 			});
 		},
@@ -209,12 +209,12 @@ var index = function (req, res) {
 		function (templatepath, cb) {
 			fs.readdir(path.join(process.cwd(), 'content/files/backups'), function (err, files) {
 				var backupzipfiles = [];
-				if(files && files.length >0){
+				if (files && files.length > 0) {
 					for (var bufi = 0; bufi < files.length; bufi++) {
 						if (files[bufi].match(/.zip/gi)) {
 							backupzipfiles.push(files[bufi]);
 						}
-					}	
+					}
 				}
 				cb(err, {
 					templatepath: templatepath,

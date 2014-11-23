@@ -72,7 +72,9 @@ window.addEventListener('load', function () {
 		componentTab1 = new ComponentTabs(tabelement);
 	}
 	contententry = new contentEntryModule({
-		// ajaxFormToSubmit: document.getElementById('edit-collection-form'),
+		uploadfileoptions: {
+			posturl: '/localasset/new?format=json'
+		},
 		mediafileinput: document.getElementById('upload-backup_button'),
 		uploadmediaCallback: function (mediadoc) {
 			backuppathInput.value = mediadoc.fileurl;

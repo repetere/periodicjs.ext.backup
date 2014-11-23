@@ -495,7 +495,7 @@ module.exports = letterpress;
 if ( typeof window === "object" && typeof window.document === "object" ) {
 	window.letterpress = letterpress;
 }
-},{"classie":1,"domhelper":5,"events":13,"superagent":8,"util":17,"util-extend":7}],5:[function(require,module,exports){
+},{"classie":1,"domhelper":5,"events":14,"superagent":8,"util":18,"util-extend":7}],5:[function(require,module,exports){
 /*
  * domhelper
  * http://github.com/yawetse/domhelper
@@ -2123,12 +2123,39 @@ module.exports = function(arr, fn, initial){
   return curr;
 };
 },{}],11:[function(require,module,exports){
+/**
+ * Merge object b with object a.
+ *
+ *     var a = { foo: 'bar' }
+ *       , b = { bar: 'baz' };
+ *
+ *     merge(a, b);
+ *     // => { foo: 'bar', bar: 'baz' }
+ *
+ * @param {Object} a
+ * @param {Object} b
+ * @return {Object}
+ * @api public
+ */
+
+exports = module.exports = function(a, b){
+  if (a && b) {
+    for (var key in b) {
+      a[key] = b[key];
+    }
+  }
+  return a;
+};
+
+},{}],12:[function(require,module,exports){
 'use strict';
 
 var request = require('superagent'),
 	updatemedia = require('./updatemedia'),
 	letterpress = require('letterpressjs'),
+	merge = require('utils-merge'),
 	uploadmediaCallback,
+	uploadfileoptions = {},
 	wysihtml5Editor,
 	ajaxFormToSubmit,
 	mediafileinput,
@@ -2139,6 +2166,7 @@ var contententry = function (options) {
 };
 
 contententry.prototype.init = function (options) {
+	uploadfileoptions = options.uploadfileoptions;
 	uploadmediaCallback = options.uploadmediaCallback;
 	ajaxFormToSubmit = options.ajaxFormToSubmit;
 	window.ajaxFormToSubmit = options.ajaxFormToSubmit;
@@ -2155,6 +2183,12 @@ contententry.prototype.init = function (options) {
 			// id of textarea element
 			toolbar: 'wysihtml5-toolbar', // id of toolbar element
 			parserRules: window.wysihtml5ParserRules // defined in parser rules set 
+		});
+	}
+	if (window.$) {
+		var $ = window.$;
+		$(document).ready(function () {
+			$('#content-textarea').summernote();
 		});
 	}
 };
@@ -2226,7 +2260,7 @@ contententry.prototype.createPeriodicTag = function (id, val, callback, url, typ
 contententry.prototype.parent_lp = function (configoptions) {
 	var options = configoptions || {},
 		idSelector = options.idSelector || '#padmin-parent',
-		sourcedata = '/' + options.doctypename + '/search.json',
+		sourcedata = '/p-admin/' + options.doctypename + '/search.json',
 		sourcearrayname = options.doctypenamelink,
 		returnlp = new letterpress({
 			idSelector: idSelector,
@@ -2252,7 +2286,7 @@ contententry.prototype.parent_lp = function (configoptions) {
 contententry.prototype.athr_lp = function (configoptions) {
 	var options = configoptions || {},
 		idSelector = options.idSelector || '#padmin-authors',
-		sourcedata = options.sourcedata || '/user/search.json',
+		sourcedata = options.sourcedata || '/p-admin/user/search.json',
 		sourcearrayname = options.sourcearrayname || 'users',
 		returnlp = new letterpress({
 			idSelector: idSelector,
@@ -2280,7 +2314,7 @@ contententry.prototype.athr_lp = function (configoptions) {
 contententry.prototype.cnt_lp = function (configoptions) {
 	var options = configoptions || {},
 		idSelector = options.idSelector || '#padmin-contenttypes',
-		sourcedata = options.sourcedata || '/contenttype/search.json',
+		sourcedata = options.sourcedata || '/p-admin/contenttype/search.json',
 		sourcearrayname = options.sourcearrayname || 'contenttypes',
 		tagposturl = options.tagposturl || '/contenttype/new/' + window.makeNiceName(document.querySelector('#padmin-contenttypes').value) + '/?format=json&limit=200',
 		type = options.type || 'contenttype',
@@ -2299,7 +2333,7 @@ contententry.prototype.cnt_lp = function (configoptions) {
 contententry.prototype.cat_lp = function (configoptions) {
 	var options = configoptions || {},
 		idSelector = options.idSelector || '#padmin-categories',
-		sourcedata = options.sourcedata || '/category/search.json',
+		sourcedata = options.sourcedata || '/p-admin/category/search.json',
 		sourcearrayname = options.sourcearrayname || 'categories',
 		categoryposturl = options.categoryposturl || '/category/new/' + window.makeNiceName(document.querySelector('#padmin-categories').value) + '/?format=json&limit=200',
 		type = options.type || 'category',
@@ -2318,7 +2352,7 @@ contententry.prototype.cat_lp = function (configoptions) {
 contententry.prototype.tag_lp = function (configoptions) {
 	var options = configoptions || {},
 		idSelector = options.idSelector || '#padmin-tags',
-		sourcedata = options.sourcedata || '/tag/search.json',
+		sourcedata = options.sourcedata || '/p-admin/tag/search.json',
 		sourcearrayname = options.sourcearrayname || 'tags',
 		tagposturl = options.tagposturl || '/tag/new/' + window.makeNiceName(document.querySelector('#padmin-tags').value) + '/?format=json&limit=200',
 		type = options.type || 'tag',
@@ -2335,6 +2369,7 @@ contententry.prototype.tag_lp = function (configoptions) {
 };
 
 contententry.prototype.uploadMediaFiles = function (e) {
+	// console.log('got to umf');
 	// fetch FileList object
 	var files = e.target.files || e.dataTransfer.files,
 		autouploadsettings = window.adminSettings || {},
@@ -2345,23 +2380,25 @@ contententry.prototype.uploadMediaFiles = function (e) {
 			contententry.prototype.autoSaveItem({
 				autosave: (autouploadsettings.autosave_compose_assets) || true
 			});
+		},
+		uploadoptions = {
+			callback: uploadmediafilecallback
 		};
 
+	uploadoptions = merge(uploadoptions, uploadfileoptions);
 	// process all File objects
 	for (var i = 0; i < files.length; i++) {
 		f = files[i];
 		// ParseFile(f);
 		// uploadFile(f);
-		updatemedia.uploadFile(mediafilesresult, f, {
-			callback: uploadmediafilecallback
-		});
+		updatemedia.uploadFile(mediafilesresult, f, uploadoptions);
 	}
 };
 
 
 module.exports = contententry;
 
-},{"./updatemedia":12,"letterpressjs":3,"superagent":8}],12:[function(require,module,exports){
+},{"./updatemedia":13,"letterpressjs":3,"superagent":8,"utils-merge":11}],13:[function(require,module,exports){
 'use strict';
 
 var updatemedia = function (element, mediadoc, additem) {
@@ -2421,6 +2458,7 @@ updatemedia.handleMediaButtonClick = function (e) {
 };
 
 updatemedia.uploadFile = function (mediafilesresult, file, options) {
+	console.log('updatemedia.uploadFile options', options);
 	var reader = new FileReader(),
 		client = new XMLHttpRequest(),
 		formData = new FormData(),
@@ -2464,7 +2502,7 @@ updatemedia.uploadFile = function (mediafilesresult, file, options) {
 
 module.exports = updatemedia;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2767,7 +2805,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -2792,7 +2830,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -2880,14 +2918,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -3477,7 +3515,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":16,"_process":15,"inherits":14}],18:[function(require,module,exports){
+},{"./support/isBuffer":17,"_process":16,"inherits":15}],19:[function(require,module,exports){
 /*
  * component.tabs
  * http://github.amexpub.com/modules/component.tabs
@@ -3489,7 +3527,7 @@ function hasOwnProperty(obj, prop) {
 
 module.exports = require('./lib/component.tabs');
 
-},{"./lib/component.tabs":19}],19:[function(require,module,exports){
+},{"./lib/component.tabs":20}],20:[function(require,module,exports){
 /*
  * component.tabs
  * http://github.amexpub.com/modules
@@ -3589,13 +3627,13 @@ componentTabs.prototype._show = function (idx) {
 };
 module.exports = componentTabs;
 
-},{"classie":20,"events":13,"util":17,"util-extend":22}],20:[function(require,module,exports){
+},{"classie":21,"events":14,"util":18,"util-extend":23}],21:[function(require,module,exports){
 module.exports=require(1)
-},{"./lib/classie":21,"/Users/yawetse/Developer/test/extwork/periodicjs/node_modules/periodicjs.ext.admin/node_modules/classie/index.js":1}],21:[function(require,module,exports){
+},{"./lib/classie":22,"/Users/yawetse/Developer/github/typesettin/typesettin.com/periodicjs/node_modules/periodicjs.ext.admin/node_modules/classie/index.js":1}],22:[function(require,module,exports){
 module.exports=require(2)
-},{"/Users/yawetse/Developer/test/extwork/periodicjs/node_modules/periodicjs.ext.admin/node_modules/classie/lib/classie.js":2}],22:[function(require,module,exports){
+},{"/Users/yawetse/Developer/github/typesettin/typesettin.com/periodicjs/node_modules/periodicjs.ext.admin/node_modules/classie/lib/classie.js":2}],23:[function(require,module,exports){
 module.exports=require(7)
-},{"/Users/yawetse/Developer/test/extwork/periodicjs/node_modules/periodicjs.ext.admin/node_modules/letterpressjs/node_modules/util-extend/extend.js":7}],23:[function(require,module,exports){
+},{"/Users/yawetse/Developer/github/typesettin/typesettin.com/periodicjs/node_modules/periodicjs.ext.admin/node_modules/letterpressjs/node_modules/util-extend/extend.js":7}],24:[function(require,module,exports){
 'use strict';
 
 var componentTab1,
@@ -3670,7 +3708,9 @@ window.addEventListener('load', function () {
 		componentTab1 = new ComponentTabs(tabelement);
 	}
 	contententry = new contentEntryModule({
-		// ajaxFormToSubmit: document.getElementById('edit-collection-form'),
+		uploadfileoptions: {
+			posturl: '/localasset/new?format=json'
+		},
 		mediafileinput: document.getElementById('upload-backup_button'),
 		uploadmediaCallback: function (mediadoc) {
 			backuppathInput.value = mediadoc.fileurl;
@@ -3687,4 +3727,4 @@ window.addEventListener('load', function () {
 	tabEvents();
 });
 
-},{"./../../../periodicjs.ext.admin/resources/js/contententry":11,"periodicjs.component.tabs":18}]},{},[23]);
+},{"./../../../periodicjs.ext.admin/resources/js/contententry":12,"periodicjs.component.tabs":19}]},{},[24]);
