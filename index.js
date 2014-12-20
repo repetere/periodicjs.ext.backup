@@ -11,8 +11,12 @@ var path = require('path');
  */
 module.exports = function (periodic) {
 	// express,app,logger,config,db,mongoose
+	periodic.app.controller.extension.backup = {
+		backup: require('./controller/backup')(periodic)
+	};
+
 	var backupRouter = periodic.express.Router(),
-		backupController = require('./controller/backup')(periodic);
+		backupController = periodic.app.controller.extension.backup.backup;
 
 	for (var x in periodic.settings.extconf.extensions) {
 		if (periodic.settings.extconf.extensions[x].name === 'periodicjs.ext.admin') {
@@ -23,4 +27,5 @@ module.exports = function (periodic) {
 	}
 
 	periodic.app.use('/p-admin/backup', backupRouter);
+	return periodic;
 };

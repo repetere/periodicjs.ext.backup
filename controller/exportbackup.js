@@ -186,7 +186,7 @@ var exportBackupModule = function (resources) {
 	appSettings = resources.settings;
 	CoreController = new ControllerHelper(resources);
 	CoreUtilities = new Utilities(resources);
-	seedController = require('../../periodicjs.ext.dbseed/controller/dbseed')(resources);
+	seedController = resources.app.controller.extension.dbseed.seed;
 	return {
 		exportBackup: exportBackup,
 		// createBackups: createBackups,
