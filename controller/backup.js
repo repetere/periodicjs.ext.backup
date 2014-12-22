@@ -264,7 +264,7 @@ var controller = function (resources) {
 	appSettings = resources.settings;
 	CoreController = new ControllerHelper(resources);
 	CoreUtilities = new Utilities(resources);
-		console.log('resources.app.controller.extension.dbseed',resources.app.controller.extension.dbseed);
+	//console.log('resources.app.controller.extension.dbseed',resources.app.controller.extension.dbseed);
 
 	exportBackupModule = require('./exportbackup')(resources);
 	restoreBackupModule = require('./restorebackup')(resources);

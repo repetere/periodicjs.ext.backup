@@ -7,7 +7,6 @@ var async = require('async'),
 	ControllerHelper = require('periodicjs.core.controller'),
 	Decompress = require('decompress'),
 	defaultRestoreDir = path.resolve(process.cwd(), 'content/files/backups/.restoretemp'),
-	npmhelper = require(path.resolve(process.cwd(), 'scripts/npmhelper'))({}),
 	backuparchievefile,
 	backupfoldername,
 	removeBackupArchieve = false,
@@ -23,10 +22,8 @@ var async = require('async'),
 	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
 
 var retstartApplication = function (asyncCallBack) {
-	CoreUtilities.restart_app({});
-	CoreUtilities.run_cmd('pm2', ['restart', 'periodicjs'], function (text) {
-		console.log(text);
-		asyncCallBack(null, 'restarted app with pm2');
+	CoreUtilities.restart_app({
+		callback:asyncCallBack
 	});
 };
 
@@ -45,6 +42,7 @@ var removeBackupdirectory = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var installMissingNodeModules = function (asyncCallBack) {
+	var npmhelper = require(path.resolve(process.cwd(), 'scripts/npmhelper'))({});
 	async.waterfall([
 		npmhelper.getInstalledExtensions,
 		npmhelper.getMissingExtensionsFromConfig,
