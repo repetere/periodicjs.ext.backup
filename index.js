@@ -12,8 +12,10 @@ var path = require('path');
 module.exports = function (periodic) {
 	// express,app,logger,config,db,mongoose
 	periodic.app.controller.extension.backup = {
-		backup: require('./controller/backup')(periodic)
+		exportbackup: require('./controller/exportbackup')(periodic),
+		restorebackup: require('./controller/restorebackup')(periodic)
 	};
+	periodic.app.controller.extension.backup.backup = require('./controller/backup')(periodic);
 
 	var backupRouter = periodic.express.Router(),
 		backupController = periodic.app.controller.extension.backup.backup;
