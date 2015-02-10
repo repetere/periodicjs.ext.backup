@@ -1,15 +1,15 @@
 'use strict';
 
-var path = require('path'),
-	fs = require('fs-extra'),
-	// util = require('util'),
-	async = require('async'),
+var appSettings,
 	backupController,
 	mongoose,
-	logger,
 	// datafile,
-	appSettings,
-	d = new Date();
+	// d = new Date(),
+	// util = require('util'),
+	// async = require('async'),
+	// path = require('path'),
+	// fs = require('fs-extra'),
+	logger;
 
 /**
  * cli backup controller
@@ -27,7 +27,17 @@ var extscript = function (resources) {
 	logger = resources.logger;
 	mongoose = resources.mongoose;
 	appSettings = resources.settings;
-	backupController = require('./controller/backup')(resources);
+
+	resources.app.controller.extension.dbseed = {
+		seed: require('../periodicjs.ext.dbseed/controller/dbseed')(resources)
+	};
+	resources.app.controller.extension.backup = {
+		exportbackup: require('./controller/exportbackup')(resources),
+		restorebackup: require('./controller/restorebackup')(resources)
+	};
+	resources.app.controller.extension.backup.backup = require('./controller/backup')(resources);
+	backupController = resources.app.controller.extension.backup.backup;
+
 	// node index.js --cli --extension backup --task sampledata
 	var cli = function (argv) {
 		if (argv.task === 'backup') {
