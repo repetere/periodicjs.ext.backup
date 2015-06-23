@@ -1,5 +1,5 @@
 'use strict';
-var path = require('path');
+// var path = require('path');
 /**
  * An extension to import json backups into periodic mongodb.
  * @{@link https://github.com/typesettin/periodicjs.ext.backup}
@@ -21,13 +21,13 @@ module.exports = function (periodic) {
 		backupController = periodic.app.controller.extension.backup.backup;
 
 	for (var x in periodic.settings.extconf.extensions) {
-		if (periodic.settings.extconf.extensions[x].name === 'periodicjs.ext.admin') {
+		if (periodic.settings.extconf.extensions[x].name === 'periodicjs.ext.asyncadmin') {
 			backupRouter.post('/restorebackup', backupController.restore_backup);
 			backupRouter.post('/downloadbackup', backupController.download_backup);
 			backupRouter.get('/', backupController.index);
 		}
 	}
 
-	periodic.app.use('/p-admin/backup', backupRouter);
+	periodic.app.use('/' + periodic.app.locals.adminPath + '/backup', backupRouter);
 	return periodic;
 };

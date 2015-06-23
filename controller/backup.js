@@ -1,22 +1,17 @@
 'use strict';
 
-var Utilities = require('periodicjs.core.utilities'),
-	ControllerHelper = require('periodicjs.core.controller'),
-	fs = require('fs-extra'),
+var fs = require('fs-extra'),
 	path = require('path'),
 	async = require('async'),
 	Asset,
 	exportBackupModule,
 	restoreBackupModule,
-	dbopsModule,
 	CoreUtilities,
 	CoreController,
 	appSettings,
 	mongoose,
 	logger,
-	uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups'),
-	d = new Date(),
-	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
+	uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups');
 
 /**
  * exports backups via admin interface
@@ -25,9 +20,10 @@ var Utilities = require('periodicjs.core.utilities'),
  * @return {object} responds with backup download
  */
 var download_backup = function (req, res) {
+	var downloadBackupOptions = CoreUtilities.removeEmptyObjectValues(req.body);
 	async.series({
 		exportbackup: function (cb) {
-			exportBackupModule.exportBackup({}, function (err, status) {
+			exportBackupModule.exportBackup(downloadBackupOptions, function (err, status) {
 				cb(err, status);
 			});
 		}
@@ -262,8 +258,8 @@ var controller = function (resources) {
 	logger = resources.logger;
 	mongoose = resources.mongoose;
 	appSettings = resources.settings;
-	CoreController = new ControllerHelper(resources);
-	CoreUtilities = new Utilities(resources);
+	CoreController = resources.core.controller;
+	CoreUtilities = resources.core.utilities;
 	//console.log('resources.app.controller.extension.dbseed',resources.app.controller.extension.dbseed);
 
 	exportBackupModule = resources.app.controller.extension.backup.exportbackup;

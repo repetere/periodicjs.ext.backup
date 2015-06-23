@@ -23,7 +23,7 @@ var async = require('async'),
 
 var retstartApplication = function (asyncCallBack) {
 	CoreUtilities.restart_app({
-		callback:asyncCallBack
+		callback: asyncCallBack
 	});
 };
 

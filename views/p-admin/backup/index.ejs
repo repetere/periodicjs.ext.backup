@@ -1,38 +1,34 @@
-<% include ../../../../periodicjs.ext.admin/views/shared/header %>
-<% include ../../../../periodicjs.ext.admin/views/shared/nav %>
+<% include ../../../../periodicjs.ext.asyncadmin/views/shared/header %>
 	<style>
 	.CodeMirror{
 		height:auto;
 	}
 	</style>
 	<input type="hidden" name="_csrf" value=<%= locals.token %> >
-	<div class="_pea-container">
-		<div class="_pea-row">
-			<div class="_pea-col-span7">
-				<div class="_pea-row">
-					<div class="_pea-col-span12">
-						<div id="tabs" class="tabs">
-							<nav>
-								<ul class="_pea-col-span12">
-									<li class="_pea-col-span6 _pea-no-margin">Backup Periodic</li>
-									<li class="_pea-col-span6 _pea-no-margin">Restore Periodic</li>
-								</ul>
-							</nav>
-							<div class="content">
-								<section class="_pea-no-padding">
-									<% include _backup_tab %>
-								</section>
-								<section class="_pea-no-padding">
-									<% include _restore_tab %>
-								</section>
-							</div>
-						</div>
+	<div class="ts-container">
+		<div class="ts-row">
+			<div class="ts-col-span12">
+				<div id="backups-tabs" class="ts-tabs">
+					<nav>
+						<ul class="ts-col-span12 ts-text-center">
+							<li class="ts-col-span4 ts-no-margin">Backup Periodic</li>
+							<li class="ts-col-span4 ts-no-margin">Restore Periodic</li>
+							<li class="ts-col-span4 ts-no-margin">More Info</li>
+						</ul>
+					</nav>
+					<div class="ts-tabs-content">
+						<section class="ts-no-padding">
+							<% include _backup_tab %>
+						</section>
+						<section class="ts-no-padding">
+							<% include _restore_tab %>
+						</section>
+						<section class="ts-no-padding">
+							<% include _more_info_pane %>
+						</section>
 					</div>
 				</div>
 			</div>
-			<div class="_pea-col-span4 _pea-pull-right">
-				<% include _more_info_pane %>
-			</div>
 		</div>
 	</div>
-<% include  ../../../../periodicjs.ext.admin/views/shared/footer %>
+<% include  ../../../../periodicjs.ext.asyncadmin/views/shared/footer %>

@@ -2,14 +2,13 @@
 var async = require('async'),
 	fs = require('fs-extra'),
 	path = require('path'),
-	Utilities = require('periodicjs.core.utilities'),
-	ControllerHelper = require('periodicjs.core.controller'),
 	archiver = require('archiver'),
 	seedController,
 	CoreUtilities,
 	CoreController,
 	appSettings,
 	mongoose,
+	exportBackupOptions,
 	logger;
 
 var d = new Date(),
@@ -17,9 +16,7 @@ var d = new Date(),
 	defaultOutputDirpath = path.resolve(process.cwd(), 'content/files/backups/'),
 	defaultBackupDir = path.join(defaultOutputDirpath, '/.tempbackup'),
 	defaultBackupZipFilepath,
-	backupthemes = true,
-	backupconfigcontent = true,
-	backuppublicdir = true,
+	// backupthemes = true,
 	backupdatabase = true,
 	filterRegexFunction = function (file) {
 		var returnValTest = file.match(/^(?!^(?:(?:(?!(?:\/|^)\.).)*?\/node_modules\/(?:(?!(?:\/|^)\.).)*?)$).*$/) && file.match(/^(?!^(?:(?:(?!(?:\/|^)\.).)*?\/content\/files\/backups\/(?:(?!(?:\/|^)\.).)*?)$).*$/);
@@ -56,9 +53,9 @@ var createBackupStatusfile = function (asyncCallBack) {
 		else {
 			backupstatus.backupinfo = {
 				backupdatabase: backupdatabase,
-				backupconfigcontent: backupconfigcontent,
-				backupthemes: backupthemes,
-				backuppublicdir: backuppublicdir,
+				backupconfigcontent: !exportBackupOptions.skipBackupContentDir,
+				// backupthemes: backupthemes,
+				backuppublicdir: !exportBackupOptions.skipBackupPublicDir,
 			};
 			backupstatus.packageJSON = packageJSON;
 			fs.outputJson(backupstatusfile, backupstatus, function (err) {
@@ -74,9 +71,8 @@ var createBackupStatusfile = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var createDBSeed = function (asyncCallBack) {
-	seedController.exportSeed({
-		filepath: path.join(defaultBackupDir, defaultBackupZipFilename) + '/backupseed.json',
-	}, asyncCallBack);
+	exportBackupOptions.filepath = path.join(defaultBackupDir, defaultBackupZipFilename) + '/backupseed.json';
+	seedController.exportSeed(exportBackupOptions, asyncCallBack);
 };
 
 /**
@@ -99,7 +95,7 @@ var createZipArchieveOfBackupDirectory = function (asyncCallBack) {
 
 	output.on('close', function () {
 		logger.silly('archiver has been finalized and the output file descriptor has closed.');
-		asyncCallBack(null, archive.pointer() + ' total bytes')
+		asyncCallBack(null, archive.pointer() + ' total bytes');
 	});
 
 	archive.on('error', function (err) {
@@ -123,10 +119,20 @@ var createBackupDirectory = function (asyncCallBack) {
 			fs.ensureDir(defaultBackupDir, cb);
 		},
 		copycontent: function (cb) {
-			fs.copy(contentDir, backupContentDir, filterRegexFunction, cb);
+			if (!exportBackupOptions.skipBackupContentDir) {
+				fs.copy(contentDir, backupContentDir, filterRegexFunction, cb);
+			}
+			else {
+				cb(null, 'skipping content dir backup');
+			}
 		},
 		copypublicdir: function (cb) {
-			fs.copy(publicDir, backupPublicDir, filterRegexFunction, cb);
+			if (!exportBackupOptions.skipBackupPublicDir) {
+				fs.copy(publicDir, backupPublicDir, filterRegexFunction, cb);
+			}
+			else {
+				cb(null, 'skipping content dir backup');
+			}
 		}
 	}, asyncCallBack);
 };
@@ -146,6 +152,10 @@ var exportBackup = function (options, exportBackupCallback) {
 	catch (e) {
 		exportBackupCallback(e);
 	}
+	exportBackupOptions = options;
+
+	// backupconfigcontent = (options.skipBackupContentDir) ? false : backupconfigcontent;
+	// backuppublicdir = (options.skipBackupPublicDir) ? false : backuppublicdir;
 
 	async.series([
 			createBackupDirectory,
@@ -184,8 +194,8 @@ var exportBackupModule = function (resources) {
 	logger = resources.logger;
 	mongoose = resources.mongoose;
 	appSettings = resources.settings;
-	CoreController = new ControllerHelper(resources);
-	CoreUtilities = new Utilities(resources);
+	CoreController = resources.core.controller;
+	CoreUtilities = resources.core.utilities;
 	seedController = resources.app.controller.extension.dbseed.seed;
 	return {
 		exportBackup: exportBackup,

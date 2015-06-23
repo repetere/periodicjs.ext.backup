@@ -1,13 +1,23 @@
 {
-	"periodicCompatibility":"4.0.0",
+	"periodicCompatibility":"5.0.0",
 	"periodicDependencies": [{
     	"extname":"periodicjs.ext.dbseed",
-    	"version":"4.0.0"
+    	"version":"5.1.0"
 	}],
 	"periodicjs.ext.admin": {
 		"menu": {
 			"Extensions": {
-				"backup restore admin": "<a href=\"/p-admin/backup\">Periodic Backup & Restore</a>"
+				"backup": {
+					"userprivilege":"110",
+					"tree-item": "file",
+			    "tree-item-label": "Backup & Restore",
+			    "tree-item-id": "backup.settings",
+			    "tree-item-link": "/%locals.adminPath%/backup",
+			    "tree-item-attributes": {
+			      "class": "async-admin-ajax-link",
+			      "title": "Backup & Restore"
+			    }
+			  }
 			}
 		}
 	}

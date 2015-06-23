@@ -1,29 +1,45 @@
-<article class="_pea-form">
-	<div class="_pea-document">
-		<div class="_pea-row">
-			<div class="_pea-row" id="exportBackupSelection">
+<article class="ts-form">
+	<div class="ts-document">
+		<div class="ts-row">
+			<div class="ts-row" id="exportBackupSelection">
 <!-- 				<div>
 					<p>Export your database.</p>
 				</div> -->
-				<div class="_pea-col-span12">
-					<form class="_pea-form " method="post" action="/p-admin/backup/downloadbackup" >
+				<div class="ts-col-span12">
+					<form id="backup-periodic-form" name="backup-periodic-form" class="ts-form " method="post" action="/<%- locals.adminPath %>/backup/downloadbackup" >
 						<h3>Download Export Backup</h3>
-						<div class="_pea-row _pea-container-forminput">
-							<div class="_pea-col-span10">
+						<div class="ts-row ts-form-row">
+							<div class="ts-col-span10">
 								<p>Download a back up of your entire periodic instance, this downloads a zip archieve of your content, configuration, a DB seed of your database and public files.</p>
+							</div>
+							<div class="ts-col-span12">
+								<details>
+									<summary>Database Seed Backup Options</summary>
+									<aside>
+										<% include ../../../../periodicjs.ext.dbseed/views/shared/_skip_seeds %>
+									</aside>
+								</details>
+							</div>
+							<div class="ts-col-span12">
+								<details>
+									<summary>Application Configuration &amp; Files Backup Options</summary>
+									<aside>
+										<% include ../../shared/_skip_backups %>
+									</aside>
+								</details>
 							</div>
 						</div>
 						<input type="hidden" name="_csrf" value=<%= locals.token %> >
-						<div class="_pea-row _pea-container-forminput _pea-text-center">
-							<input type="submit" name="save_button" style="font-size: 125%;" value="Download Periodic Backup" class="_pea-button _pea-color-success"/>
+						<div class="ts-row ts-container-forminput ts-text-center">
+							<input type="submit" id="downloan_periodic-button" name="save_button" style="font-size: 125%;" value="Download Periodic Backup" class="ts-button ts-color-success"/>
 						</div>
 					</form>
 				</div>
 			</div>
-			<div class="_pea-row">
-				<div id="exportstatuscontainer" class="_pea-col-span12 " style="display:none;">
+			<div class="ts-row">
+				<div id="exportstatuscontainer" class="ts-col-span12 " style="display:none;">
 					<h3>Export status</h3>
-					<textarea id="backupexportstatus" class="textarea-tall noFormSubmit _pea-col-span12">
+					<textarea id="backupexportstatus" class="textarea-tall noFormSubmit ts-col-span12">
 						Exporting Data
 					</textarea>
 				</div>
