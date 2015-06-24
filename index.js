@@ -18,7 +18,8 @@ module.exports = function (periodic) {
 	periodic.app.controller.extension.backup.backup = require('./controller/backup')(periodic);
 
 	var backupRouter = periodic.express.Router(),
-		backupController = periodic.app.controller.extension.backup.backup;
+		backupController = periodic.app.controller.extension.backup.backup,
+		assetController = periodic.app.controller.native.asset;
 
 	for (var x in periodic.settings.extconf.extensions) {
 		if (periodic.settings.extconf.extensions[x].name === 'periodicjs.ext.asyncadmin') {
@@ -27,6 +28,13 @@ module.exports = function (periodic) {
 			backupRouter.get('/', backupController.index);
 		}
 	}
+
+	backupRouter.post('/newuploadbackup',
+		backupController.set_backup_upload_dir,
+		assetController.localupload,
+		assetController.create_assets_from_files,
+		backupController.uploaded_backup_file);
+
 
 	periodic.app.use('/' + periodic.app.locals.adminPath + '/backup', backupRouter);
 	return periodic;

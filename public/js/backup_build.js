@@ -1,26 +1,88 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
 
-var downloadbutton;
+var downloadbutton,
+	existingbackuplist,
+	importFormContainer,
+	importBackupSelectionEl,
+	backuppathInput,
+	backupassetid,
+	backuppathDisplayInput,
+	previousbackupInput;
+
+var downloadbuttonClick = function () {
+	window.showStylieNotification({
+		message: 'creating backup archive, and downloading in the background'
+	});
+	window.adminRefresh();
+};
+
+var setExistingBackup = function (value) {
+	backuppathInput.value = value;
+	backuppathDisplayInput.value = value;
+	backupassetid.value = value;
+	previousbackupInput.value = 'usepreviousbackup';
+	importBackupSelectionEl.style.display = 'none';
+	importFormContainer.style.display = 'block';
+};
+
+var useExistingBackupListener = function (e) {
+	setExistingBackup(e.target.value);
+};
+
+var elementSelectors = function () {
+	downloadbutton = document.querySelector('#downloan_periodic-button');
+	importFormContainer = document.getElementById('importFormContainer');
+	existingbackuplist = document.getElementById('existingbackuplist');
+	backupassetid = document.getElementById('backupassetid');
+	importBackupSelectionEl = document.getElementById('importBackupSelection');
+	backuppathInput = document.getElementById('backuppath');
+	previousbackupInput = document.getElementById('previousbackup');
+	backuppathDisplayInput = document.getElementById('backuppathdisplay');
+};
+
+var eventHandlers = function () {
+	downloadbutton.addEventListener('click', downloadbuttonClick, false);
+	if (existingbackuplist) {
+		existingbackuplist.addEventListener('change', useExistingBackupListener, false);
+	}
+};
+
+window.displayImportBackupStatus = function (ajaxFormResponse) {
+	console.log('ajaxFormResponse', ajaxFormResponse);
+	window.adminRefresh();
+	var predata = document.createElement('pre'),
+		h5element = document.createElement('h5'),
+		hrelement = document.createElement('hr');
+
+	h5element.innerHTML = 'Import Seed Result';
+	predata.innerHTML = JSON.stringify(ajaxFormResponse.body.data, null, 2);
+	predata.setAttribute('class', 'ts-text-xs ts-overflow-auto');
+	predata.setAttribute('style', 'max-height:30em;');
+
+	window.servermodalElement.querySelector('#servermodal-content').innerHTML = '';
+	window.servermodalElement.querySelector('#servermodal-content').appendChild(h5element);
+	window.servermodalElement.querySelector('#servermodal-content').appendChild(hrelement);
+	window.servermodalElement.querySelector('#servermodal-content').appendChild(predata);
+	window.AdminModal.show('servermodal-modal');
+	// importstatusoutputel.innerHTML = JSON.stringify(ajaxFormResponse, null, 2);
+};
+
+window.useUploadedBackup = function (data) {
+	console.log('data', data);
+	var optionElement = document.createElement('option');
+	optionElement.value = data.body.data.files[0].filename;
+	optionElement.innerHTML = optionElement.value;
+	existingbackuplist.appendChild(optionElement);
+	existingbackuplist.value = optionElement.value;
+	setExistingBackup(optionElement.value);
+};
 
 window.backupcompleted = function () {
 	window.endPreloader();
 	window.showStylieNotification({
 		message: 'downloaded back up file'
 	});
-};
-
-var downloadbuttonClick = function () {
-	window.showStylieNotification({
-		message: 'creating backup archive, and downloading in the background'
-	});
-};
-
-var elementSelectors = function () {
-	downloadbutton = document.querySelector('#downloan_periodic-button');
-};
-var eventHandlers = function () {
-	downloadbutton.addEventListener('click', downloadbuttonClick, false);
 };
 
 var init = function () {
@@ -40,26 +102,13 @@ else {
 // 	contentEntryModule = require('./../../../periodicjs.ext.admin/resources/js/contententry'),
 // 	contententry,
 // 	tabelement,
-// 	backuppathInput,
-// 	backuppathDisplayInput,
-// 	previousbackupInput,
 // 	assetidInput,
-// 	existingbackuplist,
 // 	importstatusoutputel,
 // 	backupcustomstatusoutputel,
 // 	importBackupSelectionEl,
 // 	importFormContainer,
 // 	exampleBackupSelect,
 // 	ComponentTabs = require('periodicjs.component.tabs');
-
-// var useExistingBackupListener = function (e) {
-// 	backuppathInput.value = e.target.value;
-// 	backuppathDisplayInput.value = e.target.value;
-// 	previousbackupInput.value = 'usepreviousbackup';
-// 	importBackupSelectionEl.style.display = 'none';
-// 	importFormContainer.style.display = 'block';
-// };
-
 
 // var tabEvents = function () {
 // 	componentTab1.on('tabsShowIndex', function ( /*index*/ ) {
@@ -71,11 +120,6 @@ else {
 // window.showImportStatusResult = function () {
 // 	document.getElementById('importstatuscontainer').style.display = 'block';
 // 	importstatusoutputel.innerHTML = 'Importing backup data';
-// };
-
-// window.displayImportBackupStatus = function (ajaxFormResponse) {
-// 	// console.log(ajaxFormResponse);
-// 	importstatusoutputel.innerHTML = JSON.stringify(ajaxFormResponse, null, 2);
 // };
 
 
@@ -97,10 +141,7 @@ else {
 // 	assetidInput = document.getElementById('assetid');
 // 	tabelement = document.getElementById('tabs');
 // 	exampleBackupSelect = document.getElementById('example-backup-select');
-// 	importFormContainer = document.getElementById('importFormContainer');
-// 	existingbackuplist = document.getElementById('existingbackuplist');
 // 	importstatusoutputel = document.getElementById('backupimportstatus');
-// 	importBackupSelectionEl = document.getElementById('importBackupSelection');
 // 	backupcustomstatusoutputel = document.getElementById('backupcustomstatus');
 // 	window.ajaxFormEventListers('._pea-ajax-form');
 // 	// exampleBackupSelect.addEventListener('change', exapmleBackupSelectEventHandler, false);
@@ -121,9 +162,7 @@ else {
 // 			// console.log('uploadmediaCallback mediadoc', mediadoc);
 // 		}
 // 	});
-// 	if (existingbackuplist) {
-// 		existingbackuplist.addEventListener('change', useExistingBackupListener, false);
-// 	}
+
 // 	tabEvents();
 // });
 

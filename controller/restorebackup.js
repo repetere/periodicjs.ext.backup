@@ -33,7 +33,8 @@ var retstartApplication = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var removeBackupdirectory = function (asyncCallBack) {
-	fs.remove(path.resolve(defaultRestoreDir, backupfoldername), asyncCallBack);
+	// fs.remove(path.resolve(defaultRestoreDir, backupfoldername), asyncCallBack);
+	fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
 };
 
 /**
@@ -65,11 +66,12 @@ var restoreDBSeed = function (asyncCallBack) {
 				filepath: 'content/files/dbseeds/' + defaultExportFileName,
 			}, exportdbcallback);
 		},
-		function (wipedbcallback) {
-			seedController.emptyDB({}, wipedbcallback);
-		},
+		// function (wipedbcallback) {
+		// 	seedController.emptyDB({}, wipedbcallback);
+		// },
 		function (getseedfilecallback) {
-			fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backupseed.json'),
+			// fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backupseed.json'),
+			fs.readJson(path.resolve(defaultRestoreDir, 'backupseed.json'),
 				function (err, backupSeedFileStatusJSON) {
 					if (err) {
 						getseedfilecallback(err);
@@ -98,8 +100,10 @@ var restoreDBSeed = function (asyncCallBack) {
 var copybackupFiles = function (asyncCallBack) {
 	var contentDir = path.resolve(process.cwd(), 'content/'),
 		publicDir = path.resolve(process.cwd(), 'public/'),
-		backupContentDir = path.resolve(defaultRestoreDir, backupfoldername, 'content'),
-		backupPublicDir = path.resolve(defaultRestoreDir, backupfoldername, 'public');
+		// backupContentDir = path.resolve(defaultRestoreDir, backupfoldername, 'content'),
+		// backupPublicDir = path.resolve(defaultRestoreDir, backupfoldername, 'public');
+		backupContentDir = path.resolve(defaultRestoreDir, 'content'),
+		backupPublicDir = path.resolve(defaultRestoreDir, 'public');
 	async.parallel({
 		copyconfigcontent: function (cb) {
 			if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
@@ -126,8 +130,10 @@ var copybackupFiles = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var getBackupStatus = function (asyncCallBack) {
-	backupfoldername = path.basename(backuparchievefile, '.zip');
-	fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backup.json'),
+	console.log('getBackupStatus backuparchievefile', backuparchievefile);
+	// backupfoldername = path.basename(backuparchievefile, '.zip');
+	// fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backup.json'),
+	fs.readJson(path.resolve(defaultRestoreDir, 'backup.json'),
 		function (err, backupFileStatusJSON) {
 			if (err) {
 				asyncCallBack(err);
@@ -160,13 +166,16 @@ var removeBackupArchieveZip = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var upzipArchieve = function (asyncCallBack) {
+	defaultRestoreDir = path.join(defaultRestoreDir, path.basename(backuparchievefile, '.zip'));
 	fs.ensureDirSync(defaultRestoreDir);
 	var decompress = new Decompress()
 		.src(backuparchievefile)
 		.dest(defaultRestoreDir)
-		.use(Decompress.zip());
+		.use(Decompress.zip({
+			strip: 1
+		}));
 
-	decompress.run(function (err, files) {
+	decompress.run(function (err /*, files*/ ) {
 		if (err) {
 			asyncCallBack(err);
 		}

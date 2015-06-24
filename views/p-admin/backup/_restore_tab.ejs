@@ -8,17 +8,17 @@
 					<p>First upload or select a previously uploaded backup or database backup.</p>
 				</div>
 				<div class="ts-col-span5">
-					<h3>Upload a backup file</h3>
-					<div class="ts-row ts-container-forminput ts-text-center ts-form" style="margin-bottom:2em;">
+					<h6>Upload a backup file</h6>
+					<form id="upload-newbackup-form" name="upload-newbackup-form" class="ts-form async-admin-ajax-forms" method="post" action="/<%- locals.adminPath %>/backup/newuploadbackup"  data-successsubmitfunction="useUploadedBackup" enctype='multipart/form-data' >
 						<input type="hidden" name="_csrf" value=<%= locals.token %> >
-						<input type="file" name="upload-backup_button" id="upload-backup_button" value="Upload" class="ts-button ts-col-span12 ts-color-default"/>
-					</div>					
+						<input type="file" name="upload-backup_button" id="upload-backup_button" value="Upload" class="ts-button autoFormSubmit ts-col-span12 ts-color-default"/>
+					</form>					
 				</div>
 				<div class="ts-col-span1 ts-text-center">
-					<h3 style="margin-top:1.5em">OR</h3>
+					<h6 style="margin-top:1.5em">OR</h6>
 				</div>
 				<div class="ts-col-span6 ts-pull-right">
-					<h3>Use an existing Backup File</h3>
+					<h6>Use an existing Backup File</h6>
 					<div class="ts-row ts-container-forminput ts-form">
 						<select id="existingbackuplist" name="existingbackuplist">
 							<% if(existingbackups && existingbackups.length<1){%>
@@ -39,8 +39,8 @@
 			</div>
 			<div class="ts-row" id="importFormContainer" style="display:none;">
 				<div class="ts-col-span12">
-					<form id="restore-periodic-backup"  name="restore-periodic-backup" class="ts-form ts-ajax-form noFormSubmit" method="post" action="/<%- locals.adminPath %>/backup/restorebackup" data-successfunction="displayImportBackupStatus" data-beforesubmitfunction="showImportStatusResult" data-errorfunction="handleAjaxError">
-						<h3>Selected Import Backup</h3>
+					<form id="restore-periodic-backup"  name="restore-periodic-backup" class="ts-form async-admin-ajax-forms" method="post" action="/<%- locals.adminPath %>/backup/restorebackup" data-successsubmitfunction="displayImportBackupStatus" data-beforesubmitfunction="showImportStatusResult" data-errorfunction="handleAjaxError">
+						<h6>Selected Import Backup</h6>
 						<div class="ts-row ts-container-forminput">
 							<div class="ts-col-span11">
 								<p>This restores your content, themes, extensions, and database from a backup zip archieve.</p>
@@ -55,11 +55,24 @@
 							</div>
 							<input type="text" id="backuppathdisplay" class="ts-col-span10" name="backuppathdisplay" value=""  disabled="disabled"  >
 							<input type="hidden" id="backuppath" class="ts-col-span10" name="backuppath" value=""   >
-							<input type="hidden" id="assetid" class="ts-col-span10" name="assetid" value="" >
+							<input type="hidden" id="backupassetid" class="ts-col-span10" name="backupassetid" value="" >
 						</div>
-						<div class="ts-row ts-container-forminput">
-							<div class="ts-col-span12">
-								<span class="ts-color-error ts-text-small">WARNING:</span><span class="ts-text-small"> This will replace all data in the database, a databse back up backup will be created in content/files/backups</span>
+						<div class="ts-row ts-form-row">
+							<div class="ts-col-span6">
+								<input type="checkbox" id="removeBackupAsset" name="removeBackupAsset"/>
+								<label class="ts-label" for="removeBackupAsset">Remove Backup Archive from disk and database </label>
+							</div>
+							<div class="ts-col-span6">
+								<div class="ts-text-dark-error-color">
+								<input type="checkbox" id="wipeAndReplaceDB" name="wipeAndReplaceDB"/>
+								<label class="ts-label" for="wipeAndReplaceDB">
+									Wipe and Replace DB
+								</label>
+								</div>
+								<div class="ts-label">
+									
+									<span class="ts-color-error ts-text-small">WARNING:</span><span class="ts-text-small"> This will replace all data in the database, a databse back up backup will be created in content/files/backups</span>
+								</div>
 							</div>
 						</div>
 						<div class="ts-row ts-container-forminput ts-text-center">
@@ -70,7 +83,7 @@
 			</div>
 			<div class="ts-row">
 				<div id="importstatuscontainer" class="ts-col-span12 " style="display:none;">
-					<h3>Import status</h3>
+					<h6>Import status</h6>
 					<textarea id="backupimportstatus" class="textarea-tall noFormSubmit ts-col-span12">
 						Importing Data
 					</textarea>

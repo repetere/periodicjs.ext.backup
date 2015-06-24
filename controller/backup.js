@@ -13,6 +13,18 @@ var fs = require('fs-extra'),
 	logger,
 	uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups');
 
+var uploaded_backup_file = function (req, res) {
+	res.send({
+		result: 'success',
+		data: req.controllerData
+	});
+};
+
+var set_backup_upload_dir = function (req, res, next) {
+	req.localuploadpath = uploadbackupdir;
+	next();
+};
+
 /**
  * exports backups via admin interface
  * @param  {object} req
@@ -125,20 +137,6 @@ var restore_backup = function (req, res) {
 					fs.remove(originalbackupuploadpath, cb);
 				}
 			},
-			removeAssetFromDB: function (cb) {
-				if (uploadBackupObject.assetid && useExistingBackup) {
-					CoreController.deleteModel({
-						model: Asset,
-						deleteid: uploadBackupObject.assetid,
-						req: req,
-						res: res,
-						callback: cb
-					});
-				}
-				else {
-					cb(null, 'existing backup');
-				}
-			},
 			restorebackup: function (cb) {
 				if (useExistingBackup) {
 					restoreBackupModule.restoreBackup({
@@ -152,10 +150,32 @@ var restore_backup = function (req, res) {
 						removebackup: false
 					}, cb);
 				}
+			},
+			removeAssetFromDB: function (cb) {
+				console.log('uploadBackupObject.removeBackupAsset', uploadBackupObject.removeBackupAsset);
+				if (uploadBackupObject.backupassetid && useExistingBackup && uploadBackupObject.removeBackupAsset) {
+					Asset.remove({
+						fileurl: new RegExp(uploadBackupObject.backupassetid, 'gi')
+					}, cb);
+				}
+				else {
+					cb(null, 'skip removing asset from DB');
+				}
+			},
+			removeUploadFile: function (cb) {
+				if (uploadBackupObject.removeBackupAsset) {
+					var backuparchivepath = path.join(process.cwd(), 'content/files/backups', uploadBackupObject.backuppath);
+					console.log('backuparchivepath', backuparchivepath);
+					fs.remove(backuparchivepath, cb);
+				}
+				else {
+					cb(null, 'skip deleting backup files');
+				}
 			}
 		},
 		function (err, status) {
 			if (err) {
+				logger.error('err', err);
 				CoreController.handleDocumentQueryErrorResponse({
 					err: err,
 					res: res,
@@ -260,6 +280,7 @@ var controller = function (resources) {
 	appSettings = resources.settings;
 	CoreController = resources.core.controller;
 	CoreUtilities = resources.core.utilities;
+	Asset = mongoose.model('Asset');
 	//console.log('resources.app.controller.extension.dbseed',resources.app.controller.extension.dbseed);
 
 	exportBackupModule = resources.app.controller.extension.backup.exportbackup;
@@ -271,7 +292,9 @@ var controller = function (resources) {
 		download_backup: download_backup,
 		restoreBackup: restoreBackupModule.restoreBackup,
 		exportBackup: exportBackupModule.exportBackup,
-		isValidBackupJSONSync: restoreBackupModule.isValidBackupJSONSync
+		isValidBackupJSONSync: restoreBackupModule.isValidBackupJSONSync,
+		uploaded_backup_file: uploaded_backup_file,
+		set_backup_upload_dir: set_backup_upload_dir
 	};
 };
 
