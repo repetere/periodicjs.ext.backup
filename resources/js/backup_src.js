@@ -50,7 +50,8 @@ window.displayImportBackupStatus = function (ajaxFormResponse) {
 	window.adminRefresh();
 	var predata = document.createElement('pre'),
 		h5element = document.createElement('h5'),
-		hrelement = document.createElement('hr');
+		hrelement = document.createElement('hr'),
+		t;
 
 	h5element.innerHTML = 'Import Seed Result - Application is currently restarting';
 	predata.innerHTML = JSON.stringify(ajaxFormResponse.body.data, null, 2);
@@ -64,7 +65,10 @@ window.displayImportBackupStatus = function (ajaxFormResponse) {
 	window.AdminModal.show('servermodal-modal');
 
 	window.adminSocket.on('disconnect', function () {
-		window.StylieNotificationObject.dismiss();
+		t = setTimeout(function () {
+			window.StylieNotificationObject.dismiss();
+		}, 500);
+		// window.StylieNotificationObject.dismiss();
 		window.showStylieAlert({
 			message: 'Shutting down application and restarting Periodic.'
 		});
@@ -74,6 +78,7 @@ window.displayImportBackupStatus = function (ajaxFormResponse) {
 		window.showStylieAlert({
 			message: 'Periodic restore from backup completed and application restarted.'
 		});
+		clearTimeout(t);
 		window.adminRefresh();
 	});
 	// importstatusoutputel.innerHTML = JSON.stringify(ajaxFormResponse, null, 2);
