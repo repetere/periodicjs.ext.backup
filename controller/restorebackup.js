@@ -48,9 +48,9 @@ var installMissingNodeModules = function (asyncCallBack) {
 		npmhelper.getInstalledExtensions,
 		npmhelper.getMissingExtensionsFromConfig,
 		npmhelper.installMissingExtensions,
-		npmhelper.installMissingNodeModules,
-		npmhelper.getThemeName,
-		npmhelper.installThemeModules
+		// npmhelper.installMissingNodeModules,
+		// npmhelper.getThemeName,
+		// npmhelper.installThemeModules
 	], asyncCallBack);
 };
 

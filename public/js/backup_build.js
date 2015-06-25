@@ -11,7 +11,7 @@ var downloadbutton,
 	previousbackupInput;
 
 var downloadbuttonClick = function () {
-	window.showStylieNotification({
+	window.showStylieAlert({
 		message: 'creating backup archive, and downloading in the background'
 	});
 	window.adminRefresh();
@@ -47,15 +47,13 @@ var eventHandlers = function () {
 		existingbackuplist.addEventListener('change', useExistingBackupListener, false);
 	}
 };
-
 window.displayImportBackupStatus = function (ajaxFormResponse) {
-	console.log('ajaxFormResponse', ajaxFormResponse);
 	window.adminRefresh();
 	var predata = document.createElement('pre'),
 		h5element = document.createElement('h5'),
 		hrelement = document.createElement('hr');
 
-	h5element.innerHTML = 'Import Seed Result';
+	h5element.innerHTML = 'Import Seed Result - Application is currently restarting';
 	predata.innerHTML = JSON.stringify(ajaxFormResponse.body.data, null, 2);
 	predata.setAttribute('class', 'ts-text-xs ts-overflow-auto');
 	predata.setAttribute('style', 'max-height:30em;');
@@ -65,6 +63,20 @@ window.displayImportBackupStatus = function (ajaxFormResponse) {
 	window.servermodalElement.querySelector('#servermodal-content').appendChild(hrelement);
 	window.servermodalElement.querySelector('#servermodal-content').appendChild(predata);
 	window.AdminModal.show('servermodal-modal');
+
+	window.adminSocket.on('disconnect', function () {
+		window.StylieNotificationObject.dismiss();
+		window.showStylieAlert({
+			message: 'Shutting down application and restarting Periodic.'
+		});
+	});
+	window.adminSocket.on('connect', function () {
+		window.StylieNotificationObject.dismiss();
+		window.showStylieAlert({
+			message: 'Periodic restore from backup completed and application restarted.'
+		});
+		window.adminRefresh();
+	});
 	// importstatusoutputel.innerHTML = JSON.stringify(ajaxFormResponse, null, 2);
 };
 
