@@ -52,12 +52,15 @@ var createBackupStatusfile = function (asyncCallBack) {
 		}
 		else {
 			backupstatus.backupinfo = {
-				backupdatabase: backupdatabase,
+				backuppackagejson: !exportBackupOptions.skipPackageJson,
+				backupdatabase: !exportBackupOptions.skipDatabaseBackup,
 				backupconfigcontent: !exportBackupOptions.skipBackupContentDir,
 				// backupthemes: backupthemes,
 				backuppublicdir: !exportBackupOptions.skipBackupPublicDir,
 			};
-			backupstatus.packageJSON = packageJSON;
+			if(!exportBackupOptions.skipPackageJson){
+				backupstatus.packageJSON = packageJSON;
+			}
 			fs.outputJson(backupstatusfile, backupstatus, function (err) {
 				asyncCallBack(err);
 			});
@@ -72,7 +75,12 @@ var createBackupStatusfile = function (asyncCallBack) {
  */
 var createDBSeed = function (asyncCallBack) {
 	exportBackupOptions.filepath = path.join(defaultBackupDir, defaultBackupZipFilename) + '/backupseed.json';
-	seedController.exportSeed(exportBackupOptions, asyncCallBack);
+	if(exportBackupOptions.skipDatabaseBackup){
+		asyncCallBack(null,'skipping database');
+	}
+	else{
+		seedController.exportSeed(exportBackupOptions, asyncCallBack);
+	}
 };
 
 /**
@@ -94,7 +102,7 @@ var createZipArchieveOfBackupDirectory = function (asyncCallBack) {
 	}]).finalize();
 
 	output.on('close', function () {
-		logger.silly('archiver has been finalized and the output file descriptor has closed.');
+		logger.silly('asyncadmin - archiver has been finalized and the output file descriptor has closed.');
 		asyncCallBack(null, archive.pointer() + ' total bytes');
 	});
 

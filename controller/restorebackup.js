@@ -8,6 +8,7 @@ var async = require('async'),
 	Decompress = require('decompress'),
 	defaultRestoreDir = path.resolve(process.cwd(), 'content/files/backups/.restoretemp'),
 	backuparchievefile,
+	npmhelper = require(path.resolve(process.cwd(), 'scripts/npmhelper'))({}),
 	// backupfoldername,
 	removeBackupArchieve = false,
 	backupFileStatus = {},
@@ -17,6 +18,8 @@ var async = require('async'),
 	CoreController,
 	appSettings,
 	mongoose,
+	Asset,
+	restoreBackUpSettings,
 	logger,
 	d = new Date(),
 	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
@@ -34,7 +37,37 @@ var retstartApplication = function (asyncCallBack) {
  */
 var removeBackupdirectory = function (asyncCallBack) {
 	// fs.remove(path.resolve(defaultRestoreDir, backupfoldername), asyncCallBack);
-	fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
+	async.parallel({
+		removeAssetFromDB: function (cb) {
+			console.log('restoreBackUpSettings.removeBackupAsset', restoreBackUpSettings.removeBackupAsset);
+			if (restoreBackUpSettings.backupassetid && restoreBackUpSettings.removeBackupAsset) {
+				Asset.remove({
+					fileurl: new RegExp(restoreBackUpSettings.backupassetid, 'gi')
+				}, cb);
+			}
+			else {
+				cb(null, 'skip removing asset from DB');
+			}
+		},
+		removeUploadFile: function (cb) {
+			if (restoreBackUpSettings.removeBackupAsset) {
+				var backuparchivepath = path.join(process.cwd(), 'content/files/backups', restoreBackUpSettings.backuppath);
+				console.log('backuparchivepath', backuparchivepath);
+				fs.remove(backuparchivepath, cb);
+			}
+			else {
+				cb(null, 'skip deleting backup files');
+			}
+		}
+	},function(err,removedbackupstatus){
+		if(err){
+			asyncCallBack(null,err);
+		}
+		else{
+			console.log('removedbackupstatus',removedbackupstatus);
+			fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
+		}
+	}); 
 };
 
 /**
@@ -43,12 +76,14 @@ var removeBackupdirectory = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var installMissingNodeModules = function (asyncCallBack) {
-	var npmhelper = require(path.resolve(process.cwd(), 'scripts/npmhelper'))({});
+	console.log('got to async.waterfall installMissingNodeModules');
 	async.waterfall([
 		npmhelper.getInstalledExtensions,
 		npmhelper.getMissingExtensionsFromConfig,
 		npmhelper.installMissingExtensions,
-		npmhelper.installMissingNodeModules,
+		function(missingExtensionStatus,missingExtensions,callback){
+			callback(null,missingExtensions);
+		},
 		npmhelper.getThemeName,
 		npmhelper.installThemeModules
 	], asyncCallBack);
@@ -60,36 +95,48 @@ var installMissingNodeModules = function (asyncCallBack) {
  * @return {Function} async callback asyncCallBack(err,results);
  */
 var restoreDBSeed = function (asyncCallBack) {
-	async.series([
-		function (exportdbcallback) {
-			seedController.exportSeed({
-				filepath: 'content/files/dbseeds/' + defaultExportFileName,
-			}, exportdbcallback);
-		},
-		// function (wipedbcallback) {
-		// 	seedController.emptyDB({}, wipedbcallback);
-		// },
-		function (getseedfilecallback) {
-			// fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backupseed.json'),
-			fs.readJson(path.resolve(defaultRestoreDir, 'backupseed.json'),
-				function (err, backupSeedFileStatusJSON) {
-					if (err) {
-						getseedfilecallback(err);
+	if (backupFileStatus.backupinfo.backupdatabase) {
+		async.series(
+			{
+				createBackupSeedFile: function (exportdbcallback) {
+					seedController.exportSeed({
+						filepath: 'content/files/dbseeds/' + defaultExportFileName,
+					}, exportdbcallback);
+				},
+				wipeDataBeforeInserting:  function (wipedbcallback) {
+					if (restoreBackUpSettings.wipeAndReplaceDB) {
+						seedController.emptyDB({}, wipedbcallback);
 					}
 					else {
-						backupSeedFileJSON = backupSeedFileStatusJSON;
-						getseedfilecallback(null, 'got backup json status');
+						console.log('skip wiping database');
+						wipedbcallback(null, 'skip wiping database');
 					}
-				});
-		},
-		function (importrestorecallback) {
-			seedController.importSeed({
-				jsondata: backupSeedFileJSON,
-				encryptpassword: false,
-				insertsetting: 'upsert'
-			}, importrestorecallback);
-		}
-	], asyncCallBack);
+				},
+				loanBackupSeedFile: function (getseedfilecallback) {
+					// fs.readJson(path.resolve(defaultRestoreDir, backupfoldername, 'backupseed.json'),
+					fs.readJson(path.resolve(defaultRestoreDir, 'backupseed.json'),
+						function (err, backupSeedFileStatusJSON) {
+							if (err) {
+								getseedfilecallback(err);
+							}
+							else {
+								backupSeedFileJSON = backupSeedFileStatusJSON;
+								getseedfilecallback(null, 'got backup json status');
+							}
+						});
+				},
+				restoreDatabaseSeed: function (importrestorecallback) {
+					seedController.importSeed({
+						jsondata: backupSeedFileJSON,
+						encryptpassword: false,
+						insertsetting: 'upsert'
+					}, importrestorecallback);
+				}
+			}, asyncCallBack);
+	}
+	else {
+		asyncCallBack(null, 'do not import database seed');
+	}
 };
 
 /**
@@ -104,15 +151,30 @@ var copybackupFiles = function (asyncCallBack) {
 		// backupPublicDir = path.resolve(defaultRestoreDir, backupfoldername, 'public');
 		backupContentDir = path.resolve(defaultRestoreDir, 'content'),
 		backupPublicDir = path.resolve(defaultRestoreDir, 'public');
-	async.parallel({
-		copyconfigcontent: function (cb) {
-			if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
-				fs.copy(backupContentDir, contentDir, cb);
+	// console.log('backupFileStatus',backupFileStatus);
+	async.series({
+		copypackagejson: function (cb) {
+			if (backupFileStatus.backupinfo.backuppackagejson && typeof backupFileStatus.packageJSON !=='undefined') {
+				fs.outputJson(path.join(process.cwd(), 'package.json'), backupFileStatus.packageJSON, cb);
 			}
 			else {
-				cb(null, 'do not copy content dir');
+				cb(null, 'do not copy package json file');
 			}
 		},
+		installnodemodules: function(cb){
+			npmhelper.installPeriodicNodeModules({},function(err,data){
+				console.log('installnodemodules',err,data);
+				cb(err,data);
+			});
+		},
+		// copyconfigcontent: function (cb) {
+		// 	if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
+		// 		fs.copy(backupContentDir, contentDir, cb);
+		// 	}
+		// 	else {
+		// 		cb(null, 'do not copy content dir');
+		// 	}
+		// },
 		copypublicfiles: function (cb) {
 			if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backuppublicdir) {
 				fs.copy(backupPublicDir, publicDir, cb);
@@ -121,7 +183,10 @@ var copybackupFiles = function (asyncCallBack) {
 				cb(null, 'do not copy public dir');
 			}
 		}
-	}, asyncCallBack);
+	}, function(err,result){
+		console.log('copybackupFiles err,result',err,result);
+		asyncCallBack(err,result);
+	});
 };
 
 /**
@@ -194,6 +259,7 @@ var upzipArchieve = function (asyncCallBack) {
  */
 var restoreBackup = function (options, restoreBackupCallback) {
 	try {
+		restoreBackUpSettings = options;
 		backuparchievefile = path.resolve(options.file);
 		removeBackupArchieve = (typeof options.removebackup === 'string') ? options.removebackup : removeBackupArchieve;
 		async.series({
@@ -240,6 +306,7 @@ var restoreBackupModule = function (resources) {
 	logger = resources.logger;
 	mongoose = resources.mongoose;
 	appSettings = resources.settings;
+	Asset = mongoose.model('Asset');
 	CoreController = new ControllerHelper(resources);
 	CoreUtilities = new Utilities(resources);
 	seedController = resources.app.controller.extension.dbseed.seed;

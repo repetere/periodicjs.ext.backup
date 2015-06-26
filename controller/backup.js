@@ -48,6 +48,7 @@ var download_backup = function (req, res) {
 			});
 		}
 		else {
+			logger.silly('download_backup result',result);
 			var downloadfile = path.join(process.cwd(), 'content/files/backups', result.exportbackup.defaultBackupZipFilename),
 				exportFileName = path.basename(downloadfile);
 
@@ -138,39 +139,13 @@ var restore_backup = function (req, res) {
 				}
 			},
 			restorebackup: function (cb) {
-				if (useExistingBackup) {
-					restoreBackupModule.restoreBackup({
-						file: newbackuppath,
-						removebackup: false
-					}, cb);
-				}
-				else {
-					restoreBackupModule.restoreBackup({
-						file: fixedbackuppath,
-						removebackup: false
-					}, cb);
-				}
-			},
-			removeAssetFromDB: function (cb) {
-				console.log('uploadBackupObject.removeBackupAsset', uploadBackupObject.removeBackupAsset);
-				if (uploadBackupObject.backupassetid && useExistingBackup && uploadBackupObject.removeBackupAsset) {
-					Asset.remove({
-						fileurl: new RegExp(uploadBackupObject.backupassetid, 'gi')
-					}, cb);
-				}
-				else {
-					cb(null, 'skip removing asset from DB');
-				}
-			},
-			removeUploadFile: function (cb) {
-				if (uploadBackupObject.removeBackupAsset) {
-					var backuparchivepath = path.join(process.cwd(), 'content/files/backups', uploadBackupObject.backuppath);
-					console.log('backuparchivepath', backuparchivepath);
-					fs.remove(backuparchivepath, cb);
-				}
-				else {
-					cb(null, 'skip deleting backup files');
-				}
+				var filetouse = (useExistingBackup)? newbackuppath : fixedbackuppath ;
+				restoreBackupModule.restoreBackup({
+					file: filetouse,
+					removeBackupAsset: uploadBackupObject.removeBackupAsset,
+					backupassetid: uploadBackupObject.backupassetid,
+					wipeAndReplaceDB: uploadBackupObject.wipeAndReplaceDB
+				}, cb);
 			}
 		},
 		function (err, status) {
@@ -258,7 +233,6 @@ var index = function (req, res) {
 			}
 		});
 	});
-
 };
 
 /**
