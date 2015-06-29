@@ -1,14 +1,90 @@
 {
     "development":{
-        "cloud-backup-cron": "01 01 02 * * 05"
+        "cloud_backup_cron": "01 01 02 * * 05",
+        "cloud_backup_options":{
+            "filename":"cloudbackup",
+            "skipUserPrivilegeSeeds" : false,
+            "skipUserroleSeeds" : false,
+            "skipUsergroupSeeds" : false,
+            "skipTagSeeds" : false,
+            "skipCategorySeeds" : false,
+            "skipContenttypeSeeds" : false,
+            "skipAssetSeeds" : false,
+            "skipDataSeeds" : false,
+            "skipItemSeeds" : false,
+            "skipCollectionSeeds" : false,
+            "skipCompilationSeeds" : false,
+            "skipUserSeeds" : false,
+            "skipBackupContentDir" : false,
+            "skipBackupPublicDir" : false,
+            "skipDatabaseBackup" : false,
+            "skipPackageJson" : false
+        }
     },
     "qa":{
-        "cloud-backup-cron": "01 01 02 * * 05"
+        "cloud_backup_cron": "01 01 02 * * 05",
+        "cloud_backup_options":{
+            "filename":"cloudbackup",
+            "skipUserPrivilegeSeeds" : false,
+            "skipUserroleSeeds" : false,
+            "skipUsergroupSeeds" : false,
+            "skipTagSeeds" : false,
+            "skipCategorySeeds" : false,
+            "skipContenttypeSeeds" : false,
+            "skipAssetSeeds" : false,
+            "skipDataSeeds" : false,
+            "skipItemSeeds" : false,
+            "skipCollectionSeeds" : false,
+            "skipCompilationSeeds" : false,
+            "skipUserSeeds" : false,
+            "skipBackupContentDir" : false,
+            "skipBackupPublicDir" : false,
+            "skipDatabaseBackup" : false,
+            "skipPackageJson" : false
+        }
     },
     "staging":{
-        "cloud-backup-cron": "01 01 03 * * 05"
+        "cloud_backup_cron": "01 01 03 * * 05",
+        "cloud_backup_options":{
+            "filename":"cloudbackup",
+            "skipUserPrivilegeSeeds" : false,
+            "skipUserroleSeeds" : false,
+            "skipUsergroupSeeds" : false,
+            "skipTagSeeds" : false,
+            "skipCategorySeeds" : false,
+            "skipContenttypeSeeds" : false,
+            "skipAssetSeeds" : false,
+            "skipDataSeeds" : false,
+            "skipItemSeeds" : false,
+            "skipCollectionSeeds" : false,
+            "skipCompilationSeeds" : false,
+            "skipUserSeeds" : false,
+            "skipBackupContentDir" : false,
+            "skipBackupPublicDir" : false,
+            "skipDatabaseBackup" : false,
+            "skipPackageJson" : false
+        }
     },
     "production":{
-        "cloud-backup-cron": "01 01 04 * * *"
+        "cloud_backup_cron": "01 01 04 * * *",
+        "cloud_backup_options":{
+            "filename":"cloudbackup",
+            "skipUserPrivilegeSeeds" : false,
+            "skipUserroleSeeds" : false,
+            "skipUsergroupSeeds" : false,
+            "skipTagSeeds" : false,
+            "skipCategorySeeds" : false,
+            "skipContenttypeSeeds" : false,
+            "skipAssetSeeds" : false,
+            "skipDataSeeds" : false,
+            "skipItemSeeds" : false,
+            "skipCollectionSeeds" : false,
+            "skipCompilationSeeds" : false,
+            "skipUserSeeds" : false,
+            "skipBackupContentDir" : false,
+            "skipBackupPublicDir" : false,
+            "skipDatabaseBackup" : false,
+            "skipPackageJson" : false
+        }
     }
 }

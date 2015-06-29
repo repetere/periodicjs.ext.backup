@@ -3,6 +3,12 @@
 var fs = require('fs-extra'),
 	path = require('path'),
 	async = require('async'),
+	moment = require('moment'),
+	CronJob = require('cron').CronJob,
+	prettyCron = require('prettycron'),
+	parser = require('cron-parser'),
+	usecroncheckfile = path.join(process.cwd(), 'content/files/croncheck.json'),
+	backupconfig,
 	Asset,
 	exportBackupModule,
 	restoreBackupModule,
@@ -11,6 +17,9 @@ var fs = require('fs-extra'),
 	appSettings,
 	mongoose,
 	logger,
+	installedCloudUploads,
+	cloudUploadFunction,
+	createAssetFunction,
 	uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups');
 
 var uploaded_backup_file = function (req, res) {
@@ -214,6 +223,7 @@ var index = function (req, res) {
 			});
 		}
 	], function (err, result) {
+		var cron_interval = parser.parseExpression(backupconfig.cloud_backup_cron);
 		CoreController.handleDocumentQueryRender({
 			res: res,
 			req: req,
@@ -229,9 +239,72 @@ var index = function (req, res) {
 					version: appSettings.version
 				},
 				existingbackups: result.existingbackups,
+				cloudbackupcron_interval : cron_interval,
+				cloudbackupcron_prettycron : prettyCron.toString(backupconfig.cloud_backup_cron),
+				cloudbackupcron_next : new moment(cron_interval.next()).format('dddd, MMMM Do YYYY, h:mm:ss a'),
+				installedCloudUploads: installedCloudUploads,
 				user: req.user
 			}
 		});
+	});
+};
+
+var cron_automate_cloud_backup = function(){
+	var backupZipFileObject = {},
+		uploaded_cloud_file_result;
+	async.series({
+		exportbackup: function (cb) {
+			if(backupconfig.cloud_backup_options.filename){
+				backupconfig.cloud_backup_options.filename = backupconfig.cloud_backup_options.filename+'_'+moment().format('YYYY-MM-DD_HH-mm-ss');
+			}
+			exportBackupModule.exportBackup(backupconfig.cloud_backup_options, function (err, exportBackupStatus) {
+				var filepath = path.join(process.cwd(), 'content/files/backups', exportBackupStatus.defaultBackupZipFilename),
+					stats = fs.statSync(filepath);
+				backupZipFileObject.path = path.join(process.cwd(), 'content/files/backups', exportBackupStatus.defaultBackupZipFilename);
+				backupZipFileObject.size = stats.size;
+				backupZipFileObject.mimetype = 'application/zip';
+				backupZipFileObject.fieldname = 'cloud_backup';
+				backupZipFileObject.name = path.basename(backupZipFileObject.path);
+				cb(err, exportBackupStatus);
+			});
+		},
+		uploadbackuptocloud: function(cb){
+			cloudUploadFunction(backupZipFileObject,function(err,uploaded_cloud_file){
+				uploaded_cloud_file_result = uploaded_cloud_file;
+				cb(err,uploaded_cloud_file);
+			});
+		},
+		addbackupasset: function(cb){
+			createAssetFunction({file:uploaded_cloud_file_result},cb);
+		},
+		removecloudasset: function(cb){
+			fs.remove(backupZipFileObject.path, cb);
+		}
+	}, function (err, result) {
+		if (err) {
+			logger.error('asyncadmin - cron_automate_cloud_backup err',err);
+		}
+		else {
+			logger.silly('asyncadmin - cron_automate_cloud_backup result',result);
+		}
+	});
+};
+
+var useCronTasks = function () {
+	fs.readJson(usecroncheckfile, function (err, data) {
+		if (err) {
+			logger.silly('do not use cron for origination');
+		}
+		else {
+			logger.silly('using cron for origination', data);
+			var automate_cloud_backup = new CronJob({
+				cronTime: backupconfig.cloud_backup_cron,
+				onTick: cron_automate_cloud_backup,
+				onComplete: function () {} //,
+					// start: true
+			});
+			automate_cloud_backup.start();
+		}
 	});
 };
 
@@ -255,11 +328,13 @@ var controller = function (resources) {
 	CoreController = resources.core.controller;
 	CoreUtilities = resources.core.utilities;
 	Asset = mongoose.model('Asset');
-	//console.log('resources.app.controller.extension.dbseed',resources.app.controller.extension.dbseed);
-
+	installedCloudUploads = typeof resources.app.controller.extension.cloudupload !=='undefined';
+	backupconfig = resources.app.controller.extension.backup.config;
 	exportBackupModule = resources.app.controller.extension.backup.exportbackup;
 	restoreBackupModule = resources.app.controller.extension.backup.restorebackup;
-
+	cloudUploadFunction = resources.app.controller.extension.cloudupload.cloudupload.uploadFileIterator;
+	createAssetFunction = resources.app.controller.native.asset.create_asset;
+	useCronTasks();
 	return {
 		index: index,
 		restore_backup: restore_backup,

@@ -2,7 +2,7 @@
 	"periodicCompatibility":"5.0.0",
 	"periodicDependencies": [{
     	"extname":"periodicjs.ext.dbseed",
-    	"version":"5.1.3"
+    	"version":"5.2.0"
 	}],
 	"periodicjs.ext.asyncadmin": {
 		"menu": {
