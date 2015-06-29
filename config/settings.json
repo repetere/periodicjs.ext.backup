@@ -1,0 +1,14 @@
+{
+    "development":{
+        "cloud-backup-cron": "01 01 02 * * 05"
+    },
+    "qa":{
+        "cloud-backup-cron": "01 01 02 * * 05"
+    },
+    "staging":{
+        "cloud-backup-cron": "01 01 03 * * 05"
+    },
+    "production":{
+        "cloud-backup-cron": "01 01 04 * * *"
+    }
+}
