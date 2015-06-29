@@ -34,12 +34,26 @@ var retstartApplicationAndCopyContentFiles = function (asyncCallBack) {
 		backupContentDir = path.resolve(defaultRestoreDir, 'content');
 	// console.log('backupFileStatus',backupFileStatus);
 	if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
-		fs.copy(backupContentDir, contentDir, asyncCallBack);
+		fs.copy(backupContentDir, contentDir, function(err){
+			if(err){
+				asyncCallBack(err);
+			}
+			else{
+				fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
+			}
+		});
 	}
 	else {
 		// cb(null, 'do not copy content dir');
 		CoreUtilities.restart_app({
-			callback: asyncCallBack
+			callback: function(err){
+				if(err){
+					asyncCallBack(err);
+				}
+				else{
+					fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
+				}
+			}
 		});
 	}
 };
@@ -73,15 +87,7 @@ var removeBackupdirectory = function (asyncCallBack) {
 				cb(null, 'skip deleting backup files');
 			}
 		}
-	},function(err,removedbackupstatus){
-		if(err){
-			asyncCallBack(null,err);
-		}
-		else{
-			console.log('removedbackupstatus',removedbackupstatus);
-			fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
-		}
-	}); 
+	},asyncCallBack); 
 };
 
 /**
@@ -281,6 +287,14 @@ var restoreBackupModule = function (resources) {
 	CoreController = new ControllerHelper(resources);
 	CoreUtilities = new Utilities(resources);
 	seedController = resources.app.controller.extension.dbseed.seed;
+	fs.remove(path.resolve(defaultRestoreDir), function(err){
+		if(err){
+			logger.error('removing default restore directory error',err);
+		}
+		else{
+			logger.silly('removed default restore direcotry');
+		}
+	});
 
 	return {
 		restoreBackup: restoreBackup,
