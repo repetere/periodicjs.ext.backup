@@ -24,10 +24,24 @@ var async = require('async'),
 	d = new Date(),
 	defaultExportFileName = 'dbemptybackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime() + '.json';
 
-var retstartApplication = function (asyncCallBack) {
-	CoreUtilities.restart_app({
-		callback: asyncCallBack
-	});
+/**
+ * copy the backup files and restart app
+ * @param  {Function} asyncCallBack
+ * @return {Function} async callback asyncCallBack(err,results);
+ */
+var retstartApplicationAndCopyContentFiles = function (asyncCallBack) {
+	var contentDir = path.resolve(process.cwd(), 'content/'),
+		backupContentDir = path.resolve(defaultRestoreDir, 'content');
+	// console.log('backupFileStatus',backupFileStatus);
+	if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
+		fs.copy(backupContentDir, contentDir, asyncCallBack);
+	}
+	else {
+		// cb(null, 'do not copy content dir');
+		CoreUtilities.restart_app({
+			callback: asyncCallBack
+		});
+	}
 };
 
 /**
@@ -68,25 +82,6 @@ var removeBackupdirectory = function (asyncCallBack) {
 			fs.remove(path.resolve(defaultRestoreDir), asyncCallBack);
 		}
 	}); 
-};
-
-/**
- * installing the missing extensions
- * @param  {Function} asyncCallBack
- * @return {Function} async callback asyncCallBack(err,results);
- */
-var installMissingNodeModules = function (asyncCallBack) {
-	console.log('got to async.waterfall installMissingNodeModules');
-	async.waterfall([
-		npmhelper.getInstalledExtensions,
-		npmhelper.getMissingExtensionsFromConfig,
-		npmhelper.installMissingExtensions,
-		function(missingExtensionStatus,missingExtensions,callback){
-			callback(null,missingExtensions);
-		},
-		npmhelper.getThemeName,
-		npmhelper.installThemeModules
-	], asyncCallBack);
 };
 
 /**
@@ -131,6 +126,7 @@ var restoreDBSeed = function (asyncCallBack) {
 						encryptpassword: false,
 						insertsetting: 'upsert'
 					}, importrestorecallback);
+					// console.log('got to restoreDatabaseSeed');
 				}
 			}, asyncCallBack);
 	}
@@ -139,54 +135,24 @@ var restoreDBSeed = function (asyncCallBack) {
 	}
 };
 
-/**
- * copy the backup files
- * @param  {Function} asyncCallBack
- * @return {Function} async callback asyncCallBack(err,results);
- */
-var copybackupFiles = function (asyncCallBack) {
-	var contentDir = path.resolve(process.cwd(), 'content/'),
-		publicDir = path.resolve(process.cwd(), 'public/'),
-		// backupContentDir = path.resolve(defaultRestoreDir, backupfoldername, 'content'),
-		// backupPublicDir = path.resolve(defaultRestoreDir, backupfoldername, 'public');
-		backupContentDir = path.resolve(defaultRestoreDir, 'content'),
+var copypublicfiles = function(asyncCallBack){
+	var publicDir = path.resolve(process.cwd(), 'public/'),
 		backupPublicDir = path.resolve(defaultRestoreDir, 'public');
-	// console.log('backupFileStatus',backupFileStatus);
-	async.series({
-		copypackagejson: function (cb) {
-			if (backupFileStatus.backupinfo.backuppackagejson && typeof backupFileStatus.packageJSON !=='undefined') {
-				fs.outputJson(path.join(process.cwd(), 'package.json'), backupFileStatus.packageJSON, cb);
-			}
-			else {
-				cb(null, 'do not copy package json file');
-			}
-		},
-		installnodemodules: function(cb){
-			npmhelper.installPeriodicNodeModules({},function(err,data){
-				console.log('installnodemodules',err,data);
-				cb(err,data);
-			});
-		},
-		// copyconfigcontent: function (cb) {
-		// 	if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backupconfigcontent) {
-		// 		fs.copy(backupContentDir, contentDir, cb);
-		// 	}
-		// 	else {
-		// 		cb(null, 'do not copy content dir');
-		// 	}
-		// },
-		copypublicfiles: function (cb) {
-			if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backuppublicdir) {
-				fs.copy(backupPublicDir, publicDir, cb);
-			}
-			else {
-				cb(null, 'do not copy public dir');
-			}
-		}
-	}, function(err,result){
-		console.log('copybackupFiles err,result',err,result);
-		asyncCallBack(err,result);
-	});
+	if (backupFileStatus.backupinfo && backupFileStatus.backupinfo.backuppublicdir) {
+		fs.copy(backupPublicDir, publicDir, asyncCallBack);
+	}
+	else {
+		asyncCallBack(null, 'do not copy public dir');
+	}
+};
+
+var copypackagejson = function (cb) {
+	if (backupFileStatus.backupinfo.backuppackagejson && typeof backupFileStatus.packageJSON !=='undefined') {
+		fs.outputJson(path.join(process.cwd(), 'package.json'), backupFileStatus.packageJSON, cb);
+	}
+	else {
+		cb(null, 'do not copy package json file');
+	}
 };
 
 /**
@@ -267,11 +233,16 @@ var restoreBackup = function (options, restoreBackupCallback) {
 			removeBackupArchieveZip: removeBackupArchieveZip,
 			getBackupStatus: getBackupStatus,
 			restoreDBSeed: restoreDBSeed,
-			copybackupFiles: copybackupFiles,
-			installMissingNodeModules: installMissingNodeModules,
+			copypackagejson: copypackagejson,
+			copypublicfiles: copypublicfiles,
+			installnodemodules: function(cb){
+				npmhelper.resyncPeriodicDependenciesAsync({},cb);
+			},
+			// installMissingNodeModules: installMissingNodeModules,
 			removeBackupdirectory: removeBackupdirectory,
-			retstartApplication: retstartApplication
+			retstartApplicationAndCopyContentFiles: retstartApplicationAndCopyContentFiles
 		}, function (err, restoringStatus) {
+			console.log('restoringStatus',restoringStatus);
 			restoreBackupCallback(
 				err, {
 					upzipArchieve: restoringStatus.upzipArchieve,
