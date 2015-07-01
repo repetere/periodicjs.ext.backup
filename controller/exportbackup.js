@@ -61,7 +61,7 @@ var createBackupStatusfile = function (asyncCallBack) {
 			if(!exportBackupOptions.skipPackageJson){
 				backupstatus.packageJSON = packageJSON;
 			}
-			fs.outputJson(backupstatusfile, backupstatus, function (err) {
+			fs.outputJson(backupstatusfile, backupstatus, {spaces: 2},function (err) {
 				asyncCallBack(err);
 			});
 		}

@@ -154,7 +154,7 @@ var copypublicfiles = function(asyncCallBack){
 
 var copypackagejson = function (cb) {
 	if (backupFileStatus.backupinfo.backuppackagejson && typeof backupFileStatus.packageJSON !=='undefined') {
-		fs.outputJson(path.join(process.cwd(), 'package.json'), backupFileStatus.packageJSON, cb);
+		fs.outputJson(path.join(process.cwd(), 'package.json'), backupFileStatus.packageJSON, {spaces: 2},cb);
 	}
 	else {
 		cb(null, 'do not copy package json file');
