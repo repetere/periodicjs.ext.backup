@@ -3,8 +3,6 @@
 var async = require('async'),
 	path = require('path'),
 	fs = require('fs-extra'),
-	Utilities = require('periodicjs.core.utilities'),
-	ControllerHelper = require('periodicjs.core.controller'),
 	Decompress = require('decompress'),
 	defaultRestoreDir = path.resolve(process.cwd(), 'content/files/backups/.restoretemp'),
 	backuparchievefile,
@@ -284,8 +282,8 @@ var restoreBackupModule = function (resources) {
 	mongoose = resources.mongoose;
 	appSettings = resources.settings;
 	Asset = mongoose.model('Asset');
-	CoreController = new ControllerHelper(resources);
-	CoreUtilities = new Utilities(resources);
+	CoreController = resources.core.controller;
+	CoreUtilities = resources.core.utilities;
 	seedController = resources.app.controller.extension.dbseed.seed;
 	fs.remove(path.resolve(defaultRestoreDir), function(err){
 		if(err){
