@@ -1,26 +1,25 @@
 'use strict';
+const Promisie = require('promisie');
+const fs = Promisie.promisifyAll(require('fs-extra'));
+const moment = require('moment');
+const CronJob = require('cron').CronJob;
+const prettyCron = require('prettycron');
+const cronParser = require('cron-parser');
+const usecroncheckfile = path.join(__dirname, '../../../content/files/croncheck.json');
+const uploadbackupdir = path.join(__dirname, '../../../content/files/backups');
 
-var fs = require('fs-extra'),
-	path = require('path'),
-	async = require('async'),
-	moment = require('moment'),
-	CronJob = require('cron').CronJob,
-	prettyCron = require('prettycron'),
-	parser = require('cron-parser'),
-	usecroncheckfile = path.join(process.cwd(), 'content/files/croncheck.json'),
-	backupconfig,
-	Asset,
-	exportBackupModule,
-	restoreBackupModule,
-	CoreUtilities,
-	CoreController,
-	appSettings,
-	mongoose,
-	logger,
-	installedCloudUploads,
-	cloudUploadFunction,
-	createAssetFunction,
-	uploadbackupdir = path.resolve(process.cwd(), 'content/files/backups');
+var backupconfig;
+var Asset;
+var exportBackupModule;
+var restoreBackupModule;
+var CoreUtilities;
+var CoreController;
+var appSettings;
+var mongoose;
+var logger;
+var installedCloudUploads;
+var cloudUploadFunction;
+var createAssetFunction;
 
 var uploaded_backup_file = function (req, res) {
 	res.send({
@@ -41,47 +40,60 @@ var set_backup_upload_dir = function (req, res, next) {
  * @return {object} responds with backup download
  */
 var download_backup = function (req, res) {
-	var downloadBackupOptions = CoreUtilities.removeEmptyObjectValues(req.body);
-	async.series({
-		exportbackup: function (cb) {
-			exportBackupModule.exportBackup(downloadBackupOptions, function (err, status) {
-				cb(err, status);
-			});
-		}
-	}, function (err, result) {
-		if (err) {
+	let downloadBackupOptions = CoreUtilities.removeEmptyObjectValues(req.body);
+	let downloadFile;
+	let exportFileName;
+	exportBackupModule.exportBackup(downloadBackupOptions)
+		.then(result => {
+			logger.silly('download_backup result', result);
+			downloadFile = path.join(__dirname, '../../../content/files/backups', result.defaultBackupZipFilename);
+			exportFileName = path.basename(downloadfile);
+			res.setHeader('Content-disposition', `attachment; filename=${ exportFileName }`);
+			res.setHeader('Content-type', 'application/octet-stream');
+			return Promisie.promisify(res.download, res)(downloadFile, exportFileName);
+		}, e => {
 			CoreController.handleDocumentQueryErrorResponse({
-				err: err,
+				err: e,
 				res: res,
 				req: req
 			});
+			return false;
+		})
+		.then(result => {
+			if (result !== false) return fs.removeAsync(downloadFile)
+		})
+		.catch(logger.error.bind(logger));
+};
+
+var setup_backup_options = function (options) {
+	try {
+		if (options.useExistingBackup) {
+			options.backupname = path.basename(options.backuppath);
+			options.newbackuppath = path.join(__dirname, '../../../content/files/backups', backupname);
 		}
 		else {
-			logger.silly('download_backup result',result);
-			var downloadfile = path.join(process.cwd(), 'content/files/backups', result.exportbackup.defaultBackupZipFilename),
-				exportFileName = path.basename(downloadfile);
-
-			res.setHeader('Content-disposition', 'attachment; filename=' + exportFileName);
-			res.setHeader('Content-type', 'application/octet-stream');
-			// res.setHeader('Content-length', downloadfileObj.length);
-
-			// var filestream = fs.createReadStream(downloadfile);
-			// filestream.pipe(res);
-			// var file = __dirname + '/upload-folder/dramaticpenguin.MOV';
-			res.download(downloadfile, exportFileName, function (err) {
-				if (err) {
-					logger.error(err);
-				}
-				else {
-					fs.remove(downloadfile, function (err) {
-						if (err) {
-							logger.error(err);
-						}
-					});
-				}
-			}); // Set disposition and send it.
+			options.originalbackupuploadpath = path.join(process.cwd(), 'public', options.backuppath);
+			options.backupname = path.basename(options.backuppath);
+			options.newbackuppath = path.join(__dirname, '../../../content/files/backups', backupname);
+			let fixedbackupname = options.backupname.replace(/([^-]+-)(.+)/, '$2');
+			options.fixedbackuppath = path.join(__dirname, '../../../content/files/backups', fixedbackupname);
 		}
-	});
+		return Promisie.resolve(options);
+	}
+	catch (e) {
+		return Promisie.reject(e);
+	}
+};
+
+var checkExistingBackupStatus = function (fn, argv) {
+	return function (options) {
+		if (options.useExistingBackup) return Promisie.resolve(options);
+		else {
+			return fn(argv)
+				.then(() => options)
+				.catch(e => Promisie.reject(e));
+		}
+	};
 };
 
 /**
@@ -91,96 +103,77 @@ var download_backup = function (req, res) {
  * @return {object} responds with backup page
  */
 var restore_backup = function (req, res) {
-	var uploadBackupObject = CoreUtilities.removeEmptyObjectValues(req.body),
-		originalbackupuploadpath,
-		backupname,
-		fixedbackuppath,
-		useExistingBackup = (uploadBackupObject.previousbackup && uploadBackupObject.previousbackup === 'usepreviousbackup') ? true : false,
-		newbackuppath;
-
-	async.series({
-			setupbackupdata: function (cb) {
-				try {
-
-					if (useExistingBackup) {
-						backupname = path.basename(uploadBackupObject.backuppath);
-						newbackuppath = path.resolve(process.cwd(), 'content/files/backups', backupname);
-					}
-					else {
-						originalbackupuploadpath = path.join(process.cwd(), 'public', uploadBackupObject.backuppath);
-						backupname = path.basename(uploadBackupObject.backuppath);
-						newbackuppath = path.resolve(process.cwd(), 'content/files/backups', backupname);
-
-						var backupnamearray = backupname.split('-'),
-							fixedbackupname;
-						backupnamearray.shift();
-						fixedbackupname = backupnamearray.join('-');
-						fixedbackuppath = path.resolve(process.cwd(), 'content/files/backups', fixedbackupname);
-					}
-					cb(null, 'setup backup data');
+	let uploadBackupObject = CoreUtilities.removeEmptyObjectValues(req.body);
+	let useExistingBackup = (uploadBackupObject.previousbackup && uploadBackupObject.previousbackup === 'usepreviousbackup');
+	let processOptions = Object.assign({}, uploadBackupObject, {
+		useExistingBackup,
+		originalbackupuploadpath: null,
+		backupname: null,
+		fixedbackuppath: null,
+		newbackuppath: null
+	});
+	Promisie.series([
+		setup_backup_options.bind(null, processOptions),
+		checkExistingBackupStatus(fs.ensureDirAsync, uploadbackupdir),
+		checkExistingBackupStatus(function (options) {
+			return fs.renameAsync(options.originalbackupuploadpath, options.fixedbackuppath);
+		}),
+		checkExistingBackupStatus(function (options) {
+			return fs.removeAsync(options.originalbackupuploadpath);
+		}),
+		function restorebackup (options) {
+			let filetouse = (options.useExistingBackup) ? options.newbackuppath : options.fixedbackuppath;
+			return restoreBackupModule.restoreBackup(Object.assign({}, options, { file: filetouse }));
+		}
+	])
+		.then(result => {
+			CoreController.handleDocumentQueryRender({
+				res: res,
+				req: req,
+				renderView: 'home/index',
+				responseData: {
+					pagedata: {
+						title: 'Restore back up',
+					},
+					data: result,
+					user: req.user
 				}
-				catch (e) {
-					cb(e);
-				}
-			},
-			checkdirexists: function (cb) {
-				if (useExistingBackup) {
-					cb(null, 'skip directory check, useExistingBackup');
-				}
-				else {
-					fs.ensureDir(uploadbackupdir, cb);
-				}
-			},
-			movebackup: function (cb) {
-				if (useExistingBackup) {
-					cb(null, 'skip move directory, useExistingBackup');
-				}
-				else {
-					fs.rename(originalbackupuploadpath, fixedbackuppath, cb);
-				}
-			},
-			deleteOldUpload: function (cb) {
-				if (useExistingBackup) {
-					cb(null, 'skip delete old backup, useExistingBackup');
-				}
-				else {
-					fs.remove(originalbackupuploadpath, cb);
-				}
-			},
-			restorebackup: function (cb) {
-				var filetouse = (useExistingBackup)? newbackuppath : fixedbackuppath ;
-				restoreBackupModule.restoreBackup({
-					file: filetouse,
-					removeBackupAsset: uploadBackupObject.removeBackupAsset,
-					backupassetid: uploadBackupObject.backupassetid,
-					wipeAndReplaceDB: uploadBackupObject.wipeAndReplaceDB
-				}, cb);
-			}
-		},
-		function (err, status) {
-			if (err) {
-				logger.error('err', err);
-				CoreController.handleDocumentQueryErrorResponse({
-					err: err,
-					res: res,
-					req: req
-				});
-			}
-			else {
-				CoreController.handleDocumentQueryRender({
-					res: res,
-					req: req,
-					renderView: 'home/index',
-					responseData: {
-						pagedata: {
-							title: 'Restore back up',
-						},
-						data: status,
-						user: req.user
-					}
-				});
-			}
+			});
+		}, e => {
+			logger.error('err', e);
+			CoreController.handleDocumentQueryErrorResponse({
+				err: e,
+				res: res,
+				req: req
+			});
 		});
+};
+
+var handle_index = function (req, res, data) {
+	let cron_interval = cronParser.parseExpression(backupconfig.cloud_backup_cron);
+	let responseData = {
+		pagedata: {
+			title: 'Backup & Restore',
+			headerjs: ['/extensions/periodicjs.ext.backup/js/backup.min.js'],
+			extensions: CoreUtilities.getAdminMenu()
+		},
+		periodic: {
+			version: appSettings.version
+		},
+		existingbackups: data.existingbackups,
+		cloudbackupcron_interval : cron_interval,
+		cloudbackupcron_prettycron : prettyCron.toString(backupconfig.cloud_backup_cron),
+		cloudbackupcron_next : new moment(cron_interval.next()).format('dddd, MMMM Do YYYY, h:mm:ss a'),
+		installedCloudUploads: installedCloudUploads,
+		user: req.user
+	};
+	return CoreController._utility_responder.render(responseData, {
+		viewname: path.join(path.dirname(data.templatepath), path.basename(data.templatepath, path.extname(data.templatepath))),
+		fileext: path.extname(data.templatepath),
+		skip_response: true
+	})
+		.then(result => [req, res, { responder_override: result }])
+		.catch(e => Promisie.reject(e));
 };
 
 /**
@@ -190,122 +183,100 @@ var restore_backup = function (req, res) {
  * @return {object} responds with backup page
  */
 var index = function (req, res) {
-	async.waterfall([
-		function (cb) {
-			fs.ensureDir(path.join(process.cwd(), 'content/files/backups'), function (err) {
-				cb(err);
-			});
-		},
-		function (cb) {
-			CoreController.getPluginViewDefaultTemplate({
-					viewname: 'p-admin/backup/index',
-					themefileext: appSettings.templatefileextension,
-					extname: 'periodicjs.ext.backup'
-				},
-				function (err, templatepath) {
-					cb(err, templatepath);
-				});
-		},
-		function (templatepath, cb) {
-			fs.readdir(path.join(process.cwd(), 'content/files/backups'), function (err, files) {
-				var backupzipfiles = [];
-				if (files && files.length > 0) {
-					for (var bufi = 0; bufi < files.length; bufi++) {
-						if (files[bufi].match(/.zip/gi)) {
-							backupzipfiles.push(files[bufi]);
-						}
-					}
-				}
-				cb(err, {
-					templatepath: templatepath,
-					existingbackups: backupzipfiles
-				});
-			});
+	Promisie.series([
+		fs.ensureDirAsync.bind(fs, path.join(__dirname, '../../../content/files/backups')),
+		CoreController._utility_responder.render.bind(CoreController, {
+			viewname: 'p-admin/backup/index',
+			fileext: appSettings.templatefileextension,
+			extname: 'periodicjs.ext.backup',
+			resolve_filepath: true
+		}),
+		function (templatepath) {
+			return fs.readdirAsync(path.join(__dirname, '../../../content/files/backups'))
+				.then(filenames => {
+					let backupzipfiles = filenames.filter(name => path.extname(name) === '.zip');
+					return {
+						templatepath,
+						existingbackups: backupzipfiles
+					};
+				}, e => Promisie.reject(e));
 		}
-	], function (err, result) {
-		var cron_interval = parser.parseExpression(backupconfig.cloud_backup_cron);
-		CoreController.handleDocumentQueryRender({
-			res: res,
-			req: req,
-			err: err,
-			renderView: result.templatepath,
-			responseData: {
-				pagedata: {
-					title: 'Backup & Restore',
-					headerjs: ['/extensions/periodicjs.ext.backup/js/backup.min.js'],
-					extensions: CoreUtilities.getAdminMenu()
-				},
-				periodic: {
-					version: appSettings.version
-				},
-				existingbackups: result.existingbackups,
-				cloudbackupcron_interval : cron_interval,
-				cloudbackupcron_prettycron : prettyCron.toString(backupconfig.cloud_backup_cron),
-				cloudbackupcron_next : new moment(cron_interval.next()).format('dddd, MMMM Do YYYY, h:mm:ss a'),
-				installedCloudUploads: installedCloudUploads,
-				user: req.user
-			}
-		});
-	});
+	])
+		.then(handle_index.bind(null, req, res))
+		.spread(CoreController.meta.respond)
+		.catch(logger.error.bind(logger));
 };
 
-var cron_automate_cloud_backup = function(){
-	var backupZipFileObject = {},
-		uploaded_cloud_file_result;
-	async.series({
-		exportbackup: function (cb) {
-			if(backupconfig.cloud_backup_options.filename){
-				backupconfig.cloud_backup_options.filename = backupconfig.cloud_backup_options.filename+'_'+moment().format('YYYY-MM-DD_HH-mm-ss');
-			}
-			exportBackupModule.exportBackup(backupconfig.cloud_backup_options, function (err, exportBackupStatus) {
-				var filepath = path.join(process.cwd(), 'content/files/backups', exportBackupStatus.defaultBackupZipFilename),
-					stats = fs.statSync(filepath);
-				backupZipFileObject.path = path.join(process.cwd(), 'content/files/backups', exportBackupStatus.defaultBackupZipFilename);
-				backupZipFileObject.size = stats.size;
-				backupZipFileObject.mimetype = 'application/zip';
-				backupZipFileObject.fieldname = 'cloud_backup';
-				backupZipFileObject.name = path.basename(backupZipFileObject.path);
-				cb(err, exportBackupStatus);
-			});
+var runExportBackup = function () {
+	if (backupconfig && backupconfig.cloud_backup_options && backupconfig.cloud_backup_options.filename) {
+		backupconfig.cloud_backup_options.filename = `${ backupconfig.cloud_backup_options.filename }_${ moment().format('YYYY-MM-DD_HH-mm-ss') }`;
+	}
+	return exportBackupModule.exportBackup(backupconfig.cloud_backup_options)
+		.then(result => {
+			let filepath = path.join(__dirname, '../../../content/files/backups', result.defaultBackupZipFilename);
+			return fs.statAsync(filepath)
+				.then(stats => {
+					return [result, stats, filepath];
+				}, e => Promisie.reject(e));
+		})
+		.spread((result, stats, backupPath) => {
+			let backupZipFileObject = {
+				path: backupPath,
+				size: stats.size,
+				mimetype: 'application/zip',
+				fieldname: 'cloud_backup',
+				name: path.basename(backupPath)
+			};
+			return {
+				backupZipFileObject,
+				status: {
+					export_result: result
+				}
+			};
+		})
+		.catch(e => Promisie.reject(e));
+};
+
+var cron_automate_cloud_backup = function () {
+	Promisie.series([
+		runExportBackup,
+		function (result) {
+			return Promisie.promisify(cloudUploadFunction)(result.backupZipFileObject)
+				.then(uploaded => {
+					result.status.uploaded_cloud_file_result = uploaded;
+					return result;
+				}, e => Promisie.reject(e));
 		},
-		uploadbackuptocloud: function(cb){
-			cloudUploadFunction(backupZipFileObject,function(err,uploaded_cloud_file){
-				uploaded_cloud_file_result = uploaded_cloud_file;
-				cb(err,uploaded_cloud_file);
-			});
+		function (result) {
+			return Promisie.promisify(createAssetFunction)({ file: result.status.uploaded_cloud_file_result })
+				.then(created => {
+					result.status.asset_result = created;
+					return result;
+				}, e => Promisie.reject(e));
 		},
-		addbackupasset: function(cb){
-			createAssetFunction({file:uploaded_cloud_file_result},cb);
-		},
-		removecloudasset: function(cb){
-			fs.remove(backupZipFileObject.path, cb);
+		function (result) {
+			return fs.removeAsync(result.backupZipFileObject.path)
+				.then(removed => {
+					result.status.remove_result = removed;
+					return result;
+				}, e => Promisie.reject(e));
 		}
-	}, function (err, result) {
-		if (err) {
-			logger.error('asyncadmin - cron_automate_cloud_backup err',err);
-		}
-		else {
-			logger.silly('asyncadmin - cron_automate_cloud_backup result',result);
-		}
-	});
+	])
+		.then(logger.silly.bind(logger, 'asyncadmin - cron_automate_cloud_backup result'))
+		.catch(logger.error.bind(logger, 'asyncadmin - cron_automate_cloud_backup err'));
 };
 
 var useCronTasks = function () {
-	fs.readJson(usecroncheckfile, function (err, data) {
-		if (err) {
-			logger.silly('do not use cron for origination');
-		}
-		else {
-			logger.silly('using cron for origination', data);
+	fs.readJsonAsync(usecroncheckfile)
+		.then(result => {
+			logger.silly('using cron for origination', result);
 			var automate_cloud_backup = new CronJob({
 				cronTime: backupconfig.cloud_backup_cron,
 				onTick: cron_automate_cloud_backup,
-				onComplete: function () {} //,
-					// start: true
+				onComplete: function () {}
 			});
 			automate_cloud_backup.start();
-		}
-	});
+		}, logger.silly.bind(logger, 'do not use cron for origination'))
 };
 
 /**

@@ -1,7 +1,7 @@
 {
   "name": "periodicjs.ext.backup",
   "description": "An extension for seeding db with data",
-  "version": "5.9.1",
+  "version": "6.0.0",
   "main": "index.js",
   "engines": {
     "node": ">=0.12.x"
@@ -45,6 +45,7 @@
     "grunt-simple-mocha": ">=0.4.0",
     "jsdoc": "^3.3.2",
     "mocha": "^2.2.5",
+    "promisie": "^1.5.3",
     "uglify-js": "^2.4.15",
     "uglifyify": "^3.0.1"
   },

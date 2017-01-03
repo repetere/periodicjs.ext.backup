@@ -1,41 +1,37 @@
 'use strict';
-var async = require('async'),
-	fs = require('fs-extra'),
-	path = require('path'),
-	archiver = require('archiver'),
-	seedController,
-	CoreUtilities,
-	CoreController,
-	appSettings,
-	mongoose,
-	exportBackupOptions,
-	logger;
+const async = require('async');
+const Promisie = require('promisie');
+const fs = Promisie.promisifyAll(require('fs-extra'));
+const path = require('path');
+const archiver = require('archiver');
+const D = new Date();
+const	defaultBackupZipFilename = `periodicbackup-${ D.getUTCFullYear() }-${ D.getUTCMonth() }-${ D.getUTCDate() }-${ D.getTime() }`;
+const	defaultOutputDirpath = path.join(__dirname, '../../../content/files/backups/');
+const	defaultBackupDir = path.join(defaultOutputDirpath, '/.tempbackup');
+const filterRegexFunction = function (file) {
+	let returnValTest = file.match(/^(?!^(?:(?:(?!(?:\/|^)\.).)*?\/node_modules\/(?:(?!(?:\/|^)\.).)*?)$).*$/) && file.match(/^(?!^(?:(?:(?!(?:\/|^)\.).)*?\/content\/files\/backups\/(?:(?!(?:\/|^)\.).)*?)$).*$/);
+	return Boolean(returnValTest == true);
+};
 
-var d = new Date(),
-	defaultBackupZipFilename = 'periodicbackup' + '-' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + '-' + d.getTime(),
-	defaultOutputDirpath = path.resolve(process.cwd(), 'content/files/backups/'),
-	defaultBackupDir = path.join(defaultOutputDirpath, '/.tempbackup'),
-	defaultBackupZipFilepath,
-	// backupthemes = true,
-	backupdatabase = true,
-	filterRegexFunction = function (file) {
-		var returnValTest = file.match(/^(?!^(?:(?:(?!(?:\/|^)\.).)*?\/node_modules\/(?:(?!(?:\/|^)\.).)*?)$).*$/) && file.match(/^(?!^(?:(?:(?!(?:\/|^)\.).)*?\/content\/files\/backups\/(?:(?!(?:\/|^)\.).)*?)$).*$/);
-		if (returnValTest) {
-			return true;
-		}
-		else {
-			return false;
-		}
-	};
-
+var seedController;
+var CoreUtilities;
+var CoreController;
+var appSettings;
+var mongoose;
+var exportBackupOptions;
+var logger;
+var	defaultBackupZipFilepath;
+var	backupdatabase = true;
 
 /**
  * remove backup directory and leave zip
  * @param  {Function} asyncCallBack
  * @return {Function} async callback asyncCallBack(err,results);
  */
-var removebackupDirectory = function (asyncCallBack) {
-	fs.remove(path.join(defaultBackupDir, defaultBackupZipFilename), asyncCallBack);
+var removebackupDirectory = function (cb) {
+	let filepath = path.join(defaultBackupDir, defaultBackupZipFilename);
+	if (typeof cb === 'function') fs.remove(filepath, cb);
+	else return fs.removeAsync(filepath);
 };
 
 /**
@@ -43,29 +39,26 @@ var removebackupDirectory = function (asyncCallBack) {
  * @param  {Function} asyncCallBack
  * @return {Function} async callback asyncCallBack(err,results);
  */
-var createBackupStatusfile = function (asyncCallBack) {
-	var backupstatus = {},
-		backupstatusfile = path.join(defaultBackupDir, defaultBackupZipFilename) + '/backup.json';
-	fs.readJson(path.resolve(process.cwd(), 'package.json'), function (err, packageJSON) {
-		if (err) {
-			asyncCallBack(err);
-		}
-		else {
+var createBackupStatusfile = function (cb) {
+	let backupstatus = {};
+	let backupstatusfile = path.join(defaultBackupDir, defaultBackupZipFilename, 'backup.json');
+	return fs.readJsonAsync(path.join(__dirname, '../../../package.json'))
+		.then(packagedata => {
 			backupstatus.backupinfo = {
 				backuppackagejson: !exportBackupOptions.skipPackageJson,
 				backupdatabase: !exportBackupOptions.skipDatabaseBackup,
 				backupconfigcontent: !exportBackupOptions.skipBackupContentDir,
-				// backupthemes: backupthemes,
-				backuppublicdir: !exportBackupOptions.skipBackupPublicDir,
+				backuppublicdir: !exportBackupOptions.skipBackupPublicDir
 			};
-			if(!exportBackupOptions.skipPackageJson){
-				backupstatus.packageJSON = packageJSON;
-			}
-			fs.outputJson(backupstatusfile, backupstatus, {spaces: 2},function (err) {
-				asyncCallBack(err);
-			});
-		}
-	});
+			if (!exportBackupOptions.skipPackageJson) backupstatus.packageJSON = packagedata;
+			return fs.outputJsonAsync(backupstatusfile, backupstatus, { spaces: 2 });
+		})
+		.then(() => {
+			if (typeof cb === 'function') cb();
+		}, e => {
+			if (typeof cb === 'function') cb(e);
+			else return Promisie.reject(e);
+		});
 };
 
 /**
@@ -73,14 +66,13 @@ var createBackupStatusfile = function (asyncCallBack) {
  * @param  {Function} asyncCallBack
  * @return {Function} async callback asyncCallBack(err,results);
  */
-var createDBSeed = function (asyncCallBack) {
-	exportBackupOptions.filepath = path.join(defaultBackupDir, defaultBackupZipFilename) + '/backupseed.json';
+var createDBSeed = function (cb) {
+	exportBackupOptions.filepath = path.join(defaultBackupDir, defaultBackupZipFilename, 'backupseed.json');
 	if(exportBackupOptions.skipDatabaseBackup){
-		asyncCallBack(null,'skipping database');
+		if (typeof cb === 'function') cb(null, 'skipping database');
+		else return Promisie.resolve('skipping database');
 	}
-	else{
-		seedController.exportSeed(exportBackupOptions, asyncCallBack);
-	}
+	else return seedController.exportSeed(exportBackupOptions, cb);
 };
 
 /**
@@ -88,28 +80,36 @@ var createDBSeed = function (asyncCallBack) {
  * @param  {Function} asyncCallBack
  * @return {Function} async callback asyncCallBack(err,results);
  */
-var createZipArchieveOfBackupDirectory = function (asyncCallBack) {
+var createZipArchiveOfBackupDirectory = function (cb) {
 	//https://github.com/ctalkington/node-archiver/blob/master/examples/pack-zip.js
-	fs.ensureDirSync(defaultOutputDirpath);
-	var output = fs.createWriteStream(path.join(defaultOutputDirpath, defaultBackupZipFilename + '.zip'));
-	var archive = archiver('zip');
-	archive.pipe(output);
-	archive.bulk([{
-		expand: true,
-		cwd: path.join(defaultBackupDir, defaultBackupZipFilename),
-		src: ['**'],
-		dest: defaultBackupZipFilename
-	}]).finalize();
-
-	output.on('close', function () {
-		logger.silly('asyncadmin - archiver has been finalized and the output file descriptor has closed.');
-		asyncCallBack(null, archive.pointer() + ' total bytes');
-	});
-
-	archive.on('error', function (err) {
-		asyncCallBack(err, null);
-		// throw err;
-	});
+	return fs.ensureDirAsync(defaultOutputDirpath)
+		.then(() => {
+			let output = fs.createWriteStream(path.join(defaultOutputDirpath, defaultBackupZipFilename + '.zip'));
+			let archive = archiver('zip');
+			archive.pipe(output);
+			archive.bulk([{
+				expand: true,
+				cwd: path.join(defaultBackupDir, defaultBackupZipFilename),
+				src: ['**'],
+				dest: defaultBackupZipFilename
+			}]).finalize();
+			return new Promisie((resolve, reject) => {
+				output.on('finish', () => {
+					logger.silly('asyncadmin - archiver has been finalized and the output file descriptor has closed.');
+					resolve(archive);
+				})
+					.on('error', reject);
+				archive.on('error', reject);
+			});
+		})
+		.then(archive => {
+			if (typeof cb === 'function') cb(null, `${ archive.pointer() } total bytes`);
+			else return Promisie.resolve(`${ archive.pointer() } total bytes`);
+		})
+		.catch(e => {
+			if (typeof cb === 'function') cb(e);
+			else return Promisie.reject(e);
+		});
 };
 
 /**
@@ -117,32 +117,30 @@ var createZipArchieveOfBackupDirectory = function (asyncCallBack) {
  * @param  {Function} asyncCallBack
  * @return {Function} async callback asyncCallBack(err,results);
  */
-var createBackupDirectory = function (asyncCallBack) {
-	var contentDir = path.resolve(process.cwd(), 'content/'),
-		publicDir = path.resolve(process.cwd(), 'public/'),
-		backupContentDir = path.resolve(defaultBackupDir, defaultBackupZipFilename, 'content'),
-		backupPublicDir = path.resolve(defaultBackupDir, defaultBackupZipFilename, 'public');
-	async.series({
-		ensuredir: function (cb) {
-			fs.ensureDir(defaultBackupDir, cb);
+var createBackupDirectory = function (cb) {
+	let contentDir = path.join(__dirname, '../../../content/');
+	let publicDir = path.join(__dirname, '../../../public/');
+	let backupContentDir = path.join(defaultBackupDir, defaultBackupZipFilename, 'content');
+	let backupPublicDir = path.join(defaultBackupDir, defaultBackupZipFilename, 'public');
+	return Promisie.series([
+		fs.ensureDirAsync.bind(fs, defaultBackupDir),
+		function () {
+			if (!exportBackupOptions.skipBackupContentDir) return fs.copyAsync(contentDir, backupContentDir, filterRegexFunction);
+			else return Promisie.resolve('skipping content dir backup');
 		},
-		copycontent: function (cb) {
-			if (!exportBackupOptions.skipBackupContentDir) {
-				fs.copy(contentDir, backupContentDir, filterRegexFunction, cb);
-			}
-			else {
-				cb(null, 'skipping content dir backup');
-			}
-		},
-		copypublicdir: function (cb) {
-			if (!exportBackupOptions.skipBackupPublicDir) {
-				fs.copy(publicDir, backupPublicDir, filterRegexFunction, cb);
-			}
-			else {
-				cb(null, 'skipping content dir backup');
-			}
+		function () {
+			if (!exportBackupOptions.skipBackupContentDir) return fs.copyAsync(publicDir, backupPublicDir, filterRegexFunction);
+			else return Promisie.resolve('skipping public dir backup');
 		}
-	}, asyncCallBack);
+	])
+		.then(result => {
+			if (typeof cb === 'function') cb(null, result);
+			else return Promisie.resolve(result);
+		})
+		.catch(e => {
+			if (typeof cb === 'function') cb(e);
+			else return Promisie.reject(e);
+		});
 };
 
 /**
@@ -151,37 +149,50 @@ var createBackupDirectory = function (asyncCallBack) {
  * @param  {object} exportBackupCallback
  * @return {Function} async callback exportBackupCallback(err,results);
  */
-var exportBackup = function (options, exportBackupCallback) {
+var exportBackup = function (options, cb) {
 	try {
 		defaultBackupZipFilename = (typeof options.filename === 'string') ? options.filename : defaultBackupZipFilename;
 		defaultBackupZipFilepath = (typeof options.filepath === 'string') ? path.resolve(options.filepath) : path.join(defaultBackupDir, defaultBackupZipFilename);
 		defaultOutputDirpath = (typeof options.outputpath === 'string') ? path.resolve(options.outputpath) : path.resolve(defaultOutputDirpath);
 	}
 	catch (e) {
-		exportBackupCallback(e);
+		if (typeof cb === 'function') cb(e);
+		else return Promisie.reject(e);
 	}
 	exportBackupOptions = options;
-
-	// backupconfigcontent = (options.skipBackupContentDir) ? false : backupconfigcontent;
-	// backuppublicdir = (options.skipBackupPublicDir) ? false : backuppublicdir;
-
-	async.series([
-			createBackupDirectory,
-			createDBSeed,
-			createBackupStatusfile,
-			createZipArchieveOfBackupDirectory,
-			removebackupDirectory
-		],
-		function (err, exportbackupresult) {
-			exportBackupCallback(err, {
-				createBackupDirectory: exportbackupresult.createBackupDirectory,
-				createDBSeed: exportbackupresult.createDBSeed,
-				createBackupStatusfile: exportbackupresult.createBackupStatusfile,
-				createZipArchieveOfBackupDirectory: exportbackupresult.createZipArchieveOfBackupDirectory,
-				removebackupDirectory: exportbackupresult.removebackupDirectory,
+	let results = [];
+	let invokeAndSetResult = function (fn) {
+		return function () {
+			return fn()
+				.then(result => {
+					results.push(result);
+					return result;
+				}, e => Promisie.reject(e));
+		};
+	};
+	return Promisie.series([
+		invokeAndSetResult(createBackupDirectory),
+		invokeAndSetResult(createDBSeed),
+		invokeAndSetResult(createBackupStatusfile),
+		invokeAndSetResult(createZipArchiveOfBackupDirectory),
+		invokeAndSetResult(removebackupDirectory)
+	])
+		.then(exportResult => {
+			let result = {
+				createBackupDirectory: exportResult[0],
+				createDBSeed: exportResult[1],
+				createBackupStatusfile: exportResult[2],
+				createZipArchieveOfBackupDirectory: exportResult[3],
+				removebackupDirectory: exportResult[4],
 				defaultBackupZipFilepath: defaultBackupZipFilepath,
 				defaultBackupZipFilename: defaultBackupZipFilename + '.zip'
-			});
+			};
+			if (typeof cb === 'function') cb(null, result);
+			else return Promisie.resolve(result);
+		})
+		.catch(e => {
+			if (typeof cb === 'function') cb(e);
+			else return Promisie.reject(e);
 		});
 };
 
@@ -206,9 +217,7 @@ var exportBackupModule = function (resources) {
 	CoreUtilities = resources.core.utilities;
 	seedController = resources.app.controller.extension.dbseed.seed;
 	return {
-		exportBackup: exportBackup,
-		// createBackups: createBackups,
-		// writeBackupToDisk: writeBackupToDisk
+		exportBackup: exportBackup
 	};
 };
 
